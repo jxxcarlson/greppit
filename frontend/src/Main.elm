@@ -3,6 +3,7 @@ port module Main exposing (main)
 import Api
 import Auth
 import Browser
+import Editor
 import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
@@ -56,6 +57,65 @@ initSignedIn token user =
     , selectedId = Nothing
     , rightMode = DisplayMode Nothing
     }
+
+
+emptyEditor : EditorState
+emptyEditor =
+    { editing = Nothing
+    , title = ""
+    , tags = ""
+    , markup = Markdown
+    , body = ""
+    , saving = False
+    , errorMessage = Nothing
+    , showDeleteConfirm = False
+    }
+
+
+editorFromSnippet : Snippet -> EditorState
+editorFromSnippet s =
+    { editing = Just s
+    , title = s.title
+    , tags = s.tags
+    , markup = s.markup
+    , body = s.body
+    , saving = False
+    , errorMessage = Nothing
+    , showDeleteConfirm = False
+    }
+
+
+mapEditor : SignedInData -> Model -> (EditorState -> EditorState) -> ( Model, Cmd Msg )
+mapEditor s model f =
+    case s.rightMode of
+        EditorMode e ->
+            ( { model | auth = SignedIn { s | rightMode = EditorMode (f e) } }
+            , Cmd.none
+            )
+
+        _ ->
+            ( model, Cmd.none )
+
+
+updateEditorError : SignedInData -> Model -> Http.Error -> Model
+updateEditorError s model err =
+    case s.rightMode of
+        EditorMode e ->
+            { model
+                | auth =
+                    SignedIn
+                        { s
+                            | rightMode =
+                                EditorMode
+                                    { e
+                                        | saving = False
+                                        , errorMessage = Just (httpError err)
+                                    }
+                        }
+            }
+
+        _ ->
+            model
 
 
 init : Flags -> ( Model, Cmd Msg )
@@ -191,6 +251,72 @@ updateSignedIn msg s model =
             , Cmd.none
             )
 
+        NewSnippetPressed ->
+            ( { model | auth = SignedIn { s | rightMode = EditorMode emptyEditor } }
+            , Cmd.none
+            )
+
+        EditPressed snippet ->
+            ( { model | auth = SignedIn { s | rightMode = EditorMode (editorFromSnippet snippet) } }
+            , Cmd.none
+            )
+
+        CancelEditor ->
+            let
+                mSel =
+                    s.selectedId
+                        |> Maybe.andThen (\sid -> List.filter (\x -> x.id == sid) s.results |> List.head)
+            in
+            ( { model | auth = SignedIn { s | rightMode = DisplayMode mSel } }
+            , Cmd.none
+            )
+
+        EditorTitleChanged v ->
+            mapEditor s model (\e -> { e | title = v })
+
+        EditorTagsChanged v ->
+            mapEditor s model (\e -> { e | tags = v })
+
+        EditorMarkupChanged m ->
+            mapEditor s model (\e -> { e | markup = m })
+
+        EditorBodyChanged v ->
+            mapEditor s model (\e -> { e | body = v })
+
+        SaveSnippet ->
+            case s.rightMode of
+                EditorMode e ->
+                    case e.editing of
+                        Nothing ->
+                            ( { model | auth = SignedIn { s | rightMode = EditorMode { e | saving = True, errorMessage = Nothing } } }
+                            , Api.createSnippet model.apiBase s.token
+                                { title = e.title, tags = e.tags, markup = e.markup, body = e.body }
+                                CreateResponded
+                            )
+
+                        Just _ ->
+                            -- Edit-mode save is handled in Task 12; no-op for now.
+                            ( model, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        CreateResponded (Ok snippet) ->
+            ( { model
+                | auth =
+                    SignedIn
+                        { s
+                            | results = snippet :: List.take 4 s.results
+                            , selectedId = Just snippet.id
+                            , rightMode = DisplayMode (Just snippet)
+                        }
+              }
+            , Cmd.none
+            )
+
+        CreateResponded (Err err) ->
+            ( updateEditorError s model err, Cmd.none )
+
         _ ->
             ( model, Cmd.none )
 
@@ -271,8 +397,9 @@ viewRight s =
                     ]
                 ]
 
-        EditorMode _ ->
-            div [ class "col-right" ] [ text "(editor; coming in next task)" ]
+        EditorMode e ->
+            div [ class "col-right" ]
+                [ Editor.view e ]
 
 
 header : Maybe String -> Html Msg
