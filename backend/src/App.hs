@@ -22,15 +22,26 @@ import Api.Types (GreppitAPI)
 import Config (Config(..))
 import Db.Pool (createPool)
 import Handler.Auth (signupHandler, loginHandler, meHandler)
+import Handler.Snippets
+  ( listSnippetsHandler, createSnippetHandler, getSnippetHandler
+  , updateSnippetHandler, deleteSnippetHandler
+  )
 import Service.Auth (makeJwtSettings)
 
 server :: ServerT GreppitAPI AppM
-server = authHandlers :<|> healthHandler
+server = authHandlers :<|> snippetsHandlers :<|> healthHandler
   where
     authHandlers =
            signupHandler
       :<|> loginHandler
       :<|> meHandler
+
+    snippetsHandlers authResult =
+           listSnippetsHandler   authResult
+      :<|> createSnippetHandler  authResult
+      :<|> getSnippetHandler     authResult
+      :<|> updateSnippetHandler  authResult
+      :<|> deleteSnippetHandler  authResult
 
     healthHandler :: AppM String
     healthHandler = pure "ok"

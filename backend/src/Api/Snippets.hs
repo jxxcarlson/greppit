@@ -23,4 +23,4 @@ type SnippetsAPI =
   :<|> Capture "id" Text :> ReqBody '[JSON] UpdateSnippetRequest :> Put '[JSON] SnippetResponse
 
        -- DELETE /api/snippets/:id
-  :<|> Capture "id" Text :> DeleteNoContent
+  :<|> Capture "id" Text :> Verb 'DELETE 204 '[JSON] NoContent
