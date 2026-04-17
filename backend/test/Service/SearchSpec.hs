@@ -27,3 +27,15 @@ spec = describe "Service.Search.termsToIlikePatterns" $ do
   it "collapses multiple whitespace" $
     Search.termsToIlikePatterns (Just "  elm   howto  ")
       `shouldBe` V.fromList ["%elm%", "%howto%"]
+
+  it "escapes percent sign so literal % matches" $
+    Search.termsToIlikePatterns (Just "50%")
+      `shouldBe` V.fromList ["%50\\%%"]
+
+  it "escapes underscore so literal _ matches" $
+    Search.termsToIlikePatterns (Just "a_b")
+      `shouldBe` V.fromList ["%a\\_b%"]
+
+  it "escapes backslash" $
+    Search.termsToIlikePatterns (Just "a\\b")
+      `shouldBe` V.fromList ["%a\\\\b%"]
