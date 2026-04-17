@@ -15,10 +15,10 @@ import Network.Wai.Middleware.Cors
   (cors, simpleCorsResourcePolicy, corsRequestHeaders, corsMethods, corsOrigins, CorsResourcePolicy)
 import Network.HTTP.Types.Method (methodGet, methodPost, methodPut, methodDelete, methodOptions)
 import Servant
-import Servant.Auth.Server (defaultCookieSettings, defaultJWTSettings)
-import Crypto.JOSE.JWK (fromOctets)
+import Servant.Auth.Server (defaultCookieSettings)
 
 import AppEnv (AppEnv(..), AppM)
+import Service.Auth (makeJwtSettings)
 import Api.Types (GreppitAPI)
 import Config (Config(..))
 import Db.Pool (createPool)
@@ -45,7 +45,7 @@ mkApp env =
 startApp :: Config -> IO ()
 startApp config = do
   pool <- createPool (configDbUrl config)
-  let jwtSettings = defaultJWTSettings (fromOctets (configJwtSecret config))
+  let jwtSettings = makeJwtSettings (configJwtSecret config)
       env = AppEnv
         { envDbPool         = pool
         , envJwtSettings    = jwtSettings
