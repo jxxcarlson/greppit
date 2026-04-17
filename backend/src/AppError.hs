@@ -19,21 +19,15 @@ data AppError
   deriving (Show, Eq)
 
 appErrorToServantErr :: AppError -> ServerError
-appErrorToServantErr NotFound =
-  err404 { errBody = encode $ object
-    ["error" .= ("not_found" :: Text), "message" .= ("Not found" :: Text)] }
-appErrorToServantErr Forbidden =
-  err403 { errBody = encode $ object
-    ["error" .= ("forbidden" :: Text), "message" .= ("Forbidden" :: Text)] }
-appErrorToServantErr Unauthorized =
-  err401 { errBody = encode $ object
-    ["error" .= ("unauthorized" :: Text), "message" .= ("Unauthorized" :: Text)] }
-appErrorToServantErr (Conflict msg) =
-  err409 { errBody = encode $ object
-    ["error" .= ("conflict" :: Text), "message" .= msg] }
-appErrorToServantErr (InvalidInput msg) =
-  err400 { errBody = encode $ object
-    ["error" .= ("invalid_input" :: Text), "message" .= msg] }
-appErrorToServantErr (InternalError msg) =
-  err500 { errBody = encode $ object
-    ["error" .= ("internal_error" :: Text), "message" .= msg] }
+appErrorToServantErr NotFound            = jsonBody "not_found"      "Not found"     err404
+appErrorToServantErr Forbidden           = jsonBody "forbidden"      "Forbidden"     err403
+appErrorToServantErr Unauthorized        = jsonBody "unauthorized"   "Unauthorized"  err401
+appErrorToServantErr (Conflict msg)      = jsonBody "conflict"       msg             err409
+appErrorToServantErr (InvalidInput msg)  = jsonBody "invalid_input"  msg             err400
+appErrorToServantErr (InternalError msg) = jsonBody "internal_error" msg             err500
+
+jsonBody :: Text -> Text -> ServerError -> ServerError
+jsonBody tag msg e = e
+  { errBody    = encode $ object ["error" .= tag, "message" .= msg]
+  , errHeaders = [("Content-Type", "application/json")]
+  }
