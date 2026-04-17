@@ -1,8 +1,7 @@
 module Main where
 
+import App (startApp)
 import Config (loadConfig)
 
 main :: IO ()
-main = do
-  cfg <- loadConfig
-  putStrLn $ "greppit backend: loaded config with port=" <> show cfg
+main = loadConfig >>= startApp
