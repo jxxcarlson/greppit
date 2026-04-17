@@ -56,11 +56,20 @@ initSignedIn token user =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { apiBase = flags.apiBase
-      , auth = SignedOut (emptyAuthForm LoginMode)
-      }
-    , Cmd.none
-    )
+    case flags.initialToken of
+        Just t ->
+            ( { apiBase = flags.apiBase
+              , auth = SignedOut (emptyAuthForm LoginMode)
+              }
+            , Api.me flags.apiBase t (TokenValidated t)
+            )
+
+        Nothing ->
+            ( { apiBase = flags.apiBase
+              , auth = SignedOut (emptyAuthForm LoginMode)
+              }
+            , Cmd.none
+            )
 
 
 
@@ -115,6 +124,15 @@ updateSignedOut msg f model =
             ( { model | auth = SignedOut { f | submitting = False, errorMessage = Just (httpError err) } }
             , Cmd.none
             )
+
+        TokenValidated tok (Ok user) ->
+            ( { model | auth = SignedIn (initSignedIn tok user) }
+            , Cmd.none
+            )
+
+        TokenValidated _ (Err _) ->
+            -- Stored token is no longer valid.
+            ( model, removeToken () )
 
         _ ->
             ( model, Cmd.none )
