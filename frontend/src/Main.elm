@@ -8,6 +8,7 @@ import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Http
 import Process
+import Render
 import Search
 import Task
 import Types exposing (..)
@@ -230,9 +231,48 @@ view model =
                             , selectedId = s.selectedId
                             }
                         ]
-                    , div [ class "col-right" ] [ text "(display / editor goes here)" ]
+                    , viewRight s
                     ]
                 ]
+
+
+viewRight : SignedInData -> Html Msg
+viewRight s =
+    case s.rightMode of
+        DisplayMode Nothing ->
+            div [ class "col-right" ]
+                [ div [ class "display-snippet" ]
+                    [ text "Select a snippet on the left, or click \"New snippet\" to create one." ]
+                ]
+
+        DisplayMode (Just snippet) ->
+            div [ class "col-right" ]
+                [ div [ class "display-snippet" ]
+                    [ div [ class "display-header" ]
+                        [ div [ class "display-title" ]
+                            [ text
+                                (if String.isEmpty snippet.title then
+                                    "(untitled)"
+                                 else
+                                    snippet.title
+                                )
+                            ]
+                        , button
+                            [ class "btn btn-secondary"
+                            , onClick (EditPressed snippet)
+                            ]
+                            [ text "Edit" ]
+                        ]
+                    , if String.isEmpty snippet.tags then
+                        text ""
+                      else
+                        div [ class "display-tags" ] [ text snippet.tags ]
+                    , Render.render snippet
+                    ]
+                ]
+
+        EditorMode _ ->
+            div [ class "col-right" ] [ text "(editor; coming in next task)" ]
 
 
 header : Maybe String -> Html Msg
