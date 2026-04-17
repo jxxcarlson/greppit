@@ -91,3 +91,34 @@ curl -sS -o /dev/null -w "status=%{http_code}\n" \
 
 say "Unauthed list (expect 401)"
 curl -sS -o /dev/null -w "status=%{http_code}\n" "$BASE/api/snippets"
+
+say "Cross-user isolation"
+
+EMAIL2="test2-$(date +%s)@example.com"
+SIGNUP2=$(curl -sS -X POST "$BASE/api/auth/signup" \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"$EMAIL2\",\"password\":\"$PW\"}")
+TOKEN2=$(echo "$SIGNUP2" | jq -r .token)
+
+say "User1 creates X"
+X=$(curl -sS -X POST "$BASE/api/snippets" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"title":"private","tags":"","markup":"markdown","body":"secret"}')
+X_ID=$(echo "$X" | jq -r .id)
+
+say "User2 tries to GET X (expect 404, not 403 - no existence leak)"
+curl -sS -o /dev/null -w "status=%{http_code}\n" \
+  "$BASE/api/snippets/$X_ID" -H "Authorization: Bearer $TOKEN2"
+
+say "User2 tries to PUT X (expect 404)"
+curl -sS -o /dev/null -w "status=%{http_code}\n" \
+  -X PUT "$BASE/api/snippets/$X_ID" \
+  -H "Authorization: Bearer $TOKEN2" -H "Content-Type: application/json" \
+  -d '{"title":"hijack","tags":"","markup":"markdown","body":""}'
+
+say "User2 tries to DELETE X (expect 404)"
+curl -sS -o /dev/null -w "status=%{http_code}\n" \
+  -X DELETE "$BASE/api/snippets/$X_ID" -H "Authorization: Bearer $TOKEN2"
+
+say "User2's list does NOT include X (expect length 0)"
+curl -sS "$BASE/api/snippets" -H "Authorization: Bearer $TOKEN2" | jq 'length'
