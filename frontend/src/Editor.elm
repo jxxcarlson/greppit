@@ -54,7 +54,10 @@ view st =
         , div [ class "editor-body" ]
             [ CodeMirror.view
                 { key = keyForEditor
-                , value = st.body
+                , initialValue =
+                    case st.editing of
+                        Just s  -> s.body
+                        Nothing -> ""
                 , onInput = EditorBodyChanged
                 }
             ]
