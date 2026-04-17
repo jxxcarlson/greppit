@@ -95,6 +95,22 @@ nginx will serve these static files: `index.html`, `elm.js`,
 
 ## Phase 6 — systemd unit for the backend
 
+First, install the compiled binary to a stable path. The systemd unit
+calls `/usr/local/bin/greppit-backend` directly, which avoids a
+"binary not found under this snapshot hash" trap that `stack exec`
+produces when run from systemd:
+
+```
+cd /root/greppit/backend
+stack install --local-bin-path /usr/local/bin
+ls -l /usr/local/bin/greppit-backend
+```
+
+(Repeat this `stack install` whenever you rebuild the backend after a
+pull.)
+
+Then install and start the service:
+
 ```
 cp /root/greppit/deploy/greppit-backend.service /etc/systemd/system/
 systemctl daemon-reload
