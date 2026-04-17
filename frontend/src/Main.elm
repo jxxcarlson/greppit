@@ -249,8 +249,11 @@ updateSignedIn msg s model =
             in
             ( { model | auth = SignedIn newS }, Cmd.none )
 
-        SearchResponded (Err _) ->
-            ( model, Cmd.none )
+        SearchResponded (Err err) ->
+            if isAuthError err then
+                forceSignOut model
+            else
+                ( model, Cmd.none )
 
         SelectResult sid ->
             let
@@ -337,7 +340,10 @@ updateSignedIn msg s model =
             )
 
         CreateResponded (Err err) ->
-            ( updateEditorError s model err, Cmd.none )
+            if isAuthError err then
+                forceSignOut model
+            else
+                ( updateEditorError s model err, Cmd.none )
 
         UpdateResponded (Ok snippet) ->
             let
@@ -358,7 +364,10 @@ updateSignedIn msg s model =
             )
 
         UpdateResponded (Err err) ->
-            ( updateEditorError s model err, Cmd.none )
+            if isAuthError err then
+                forceSignOut model
+            else
+                ( updateEditorError s model err, Cmd.none )
 
         DeletePressed ->
             mapEditor s model (\e -> { e | showDeleteConfirm = True })
@@ -405,7 +414,10 @@ updateSignedIn msg s model =
             )
 
         DeleteResponded _ (Err err) ->
-            ( updateEditorError s model err, Cmd.none )
+            if isAuthError err then
+                forceSignOut model
+            else
+                ( updateEditorError s model err, Cmd.none )
 
         _ ->
             ( model, Cmd.none )
@@ -422,6 +434,22 @@ httpError err =
         Http.BadStatus 409  -> "That email is already registered"
         Http.BadStatus s    -> "Server error (" ++ String.fromInt s ++ ")"
         Http.BadBody _      -> "Unexpected server response"
+
+
+-- | Is this HTTP error a "your session is over" signal?
+isAuthError : Http.Error -> Bool
+isAuthError err =
+    case err of
+        Http.BadStatus 401 -> True
+        _ -> False
+
+
+-- | Transition to signed-out after a 401 mid-session; clear the token too.
+forceSignOut : Model -> ( Model, Cmd Msg )
+forceSignOut model =
+    ( { model | auth = SignedOut (emptyAuthForm LoginMode) }
+    , removeToken ()
+    )
 
 
 
