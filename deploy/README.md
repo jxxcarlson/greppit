@@ -122,43 +122,78 @@ journalctl -u greppit-backend -f         # tail logs (Ctrl-C to stop)
 From here on, restart the backend with `systemctl restart greppit-backend`,
 not with `scripts/restart.sh`.
 
-## Phase 7 — nginx
+## Phase 7 — nginx (HTTP only, cert arrives in Phase 8)
+
+The config in `deploy/nginx/greppit.app.conf` is intentionally HTTP-only.
+Certbot adds the TLS listener + redirect on first run (same pattern as
+the existing scripta site on this droplet).
 
 ```
 cp /root/greppit/deploy/nginx/greppit.app.conf /etc/nginx/sites-available/
-ln -s /etc/nginx/sites-available/greppit.app.conf /etc/nginx/sites-enabled/
+ln -sf /etc/nginx/sites-available/greppit.app.conf /etc/nginx/sites-enabled/
 nginx -t
 systemctl reload nginx
 ```
 
-If `nginx -t` complains about the TLS cert files, do Phase 8 first then
-come back.
+`nginx -t` should pass cleanly — no cert references yet.
 
-## Phase 8 — TLS cert (Cloudflare Origin, simplest)
+## Phase 8 — TLS cert (Let's Encrypt via certbot)
 
-1. Cloudflare dashboard → greppit.app → SSL/TLS → Origin Server →
-   **Create Certificate**.
-2. Key type: RSA (2048). Hostnames: `greppit.app, *.greppit.app`.
-   Validity: 15 years.
-3. Cloudflare shows two blobs (cert + private key). Save them:
+Matches scripta's setup on this droplet.
+
+### DNS first
+
+In the Cloudflare dashboard, add an `A` record:
+
+- `greppit.app → <droplet IP>`
+- **Proxy status: DNS only** (grey cloud) *temporarily*, so Let's
+  Encrypt's HTTP-01 challenge reaches your droplet directly.
+
+(Optional: also `A` record for `www.greppit.app` to the same IP.)
+
+Give DNS a minute, then verify resolution:
 
 ```
-mkdir -p /etc/ssl/greppit && chmod 700 /etc/ssl/greppit
-# paste CF's "Origin Certificate" into:
-vim /etc/ssl/greppit/origin.pem
-# paste CF's private key into:
-vim /etc/ssl/greppit/origin.key
-chmod 600 /etc/ssl/greppit/origin.key
-nginx -t && systemctl reload nginx
+dig +short greppit.app
 ```
 
-## Phase 9 — Cloudflare DNS + SSL mode
+### Issue the cert
 
-- DNS → add `A` record `greppit.app → <droplet IP>`, **proxied** (orange cloud).
-  Same for `www` if you want it to resolve.
-- SSL/TLS → Overview → **Full (strict)**. This requires the origin cert
-  from Phase 8. Never use "Flexible" — it's plaintext between Cloudflare
-  and your droplet.
+```
+apt install -y python3-certbot-nginx       # if not installed
+certbot --nginx -d greppit.app -d www.greppit.app
+```
+
+Follow the prompts (email, ToS). Certbot will:
+
+1. Verify domain control via HTTP-01.
+2. Write the cert to `/etc/letsencrypt/live/greppit.app/`.
+3. Patch `/etc/nginx/sites-available/greppit.app.conf` in place to add
+   `listen 443 ssl`, the cert paths, and an HTTP → HTTPS redirect
+   (you'll see `# managed by Certbot` comments, same as scripta).
+4. Reload nginx.
+
+Verify the patched config:
+
+```
+grep -n 'managed by Certbot' /etc/nginx/sites-available/greppit.app.conf
+nginx -t
+curl -sI http://greppit.app/     # 301 redirect to https
+curl -sI https://greppit.app/    # 200
+```
+
+**Auto-renewal:** certbot installs a systemd timer (`certbot.timer`). It
+renews every cert on the box — scripta's and greppit's both get picked
+up automatically. `systemctl list-timers certbot.timer` to confirm.
+
+## Phase 9 — Cloudflare proxy + SSL mode
+
+Now flip Cloudflare's proxy on:
+
+- DNS → set the `greppit.app` record to **Proxied** (orange cloud).
+- SSL/TLS → Overview → **Full (strict)**. Let's Encrypt is trusted by
+  Cloudflare, so Full (strict) works immediately. Never use "Flexible"
+  — it's plaintext between Cloudflare and your droplet.
 - SSL/TLS → Edge Certificates → **Always Use HTTPS: On**, **Min TLS 1.2**.
 
 ## Phase 10 — Verify
