@@ -231,7 +231,23 @@ updateSignedIn msg s model =
                 )
 
         SearchResponded (Ok results) ->
-            ( { model | auth = SignedIn { s | results = results } }, Cmd.none )
+            let
+                base = { s | results = results }
+                newS =
+                    case ( s.rightMode, List.head results ) of
+                        ( DisplayMode Nothing, Just first ) ->
+                            -- Nothing is shown on the right yet; auto-select the
+                            -- first result so the user has something to read on
+                            -- load, reload, and sign-in.
+                            { base
+                                | selectedId = Just first.id
+                                , rightMode = DisplayMode (Just first)
+                            }
+
+                        _ ->
+                            base
+            in
+            ( { model | auth = SignedIn newS }, Cmd.none )
 
         SearchResponded (Err _) ->
             ( model, Cmd.none )
