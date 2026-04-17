@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>greppit</title>
+
+    <!-- KaTeX for math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #222; }
+
+        /* Header */
+        .header { height: 50px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ddd; background: #fff; }
+        .header-title { font-weight: 600; font-size: 18px; color: #333; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .header-email { color: #666; font-size: 13px; }
+
+        /* Two-column body */
+        .app { display: flex; height: calc(100vh - 50px); overflow: hidden; }
+        .col-left { width: 340px; min-width: 340px; border-right: 1px solid #ddd; padding: 12px; overflow-y: auto; background: #fafafa; }
+        .col-right { flex: 1; overflow-y: auto; padding: 16px; }
+
+        /* Search */
+        .search-input { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; outline: none; }
+        .result-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .result-item { padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 4px; cursor: pointer; background: #fff; }
+        .result-item:hover { background: #f0f4f9; }
+        .result-item.selected { border-color: #0066cc; background: #eaf2fb; }
+        .result-title { font-weight: 600; font-size: 14px; }
+        .result-tags { color: #777; font-size: 12px; margin-top: 2px; }
+
+        /* Display mode */
+        .display-snippet { max-width: 42rem; }
+        .display-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .display-title { font-size: 22px; font-weight: 600; }
+        .display-tags { color: #777; font-size: 13px; margin-bottom: 16px; }
+        .display-body h1, .display-body h2, .display-body h3 { margin: 0.7em 0 0.3em 0; }
+        .display-body p { margin: 0.4em 0; line-height: 1.5; }
+        .display-body code { background: #f3f3f3; padding: 1px 4px; border-radius: 3px; font-family: ui-monospace, Menlo, monospace; font-size: 0.95em; }
+        .display-body pre { background: #f3f3f3; padding: 10px; border-radius: 4px; overflow-x: auto; }
+
+        /* Buttons */
+        .btn { padding: 6px 14px; border-radius: 4px; font-size: 14px; cursor: pointer; border: 1px solid transparent; background: #fff; }
+        .btn-primary { background: #0066cc; color: #fff; border-color: #0066cc; }
+        .btn-secondary { color: #333; border-color: #bbb; }
+        .btn-danger { background: #c23; color: #fff; border-color: #c23; }
+        .btn:disabled { opacity: 0.5; cursor: default; }
+
+        /* Editor */
+        .editor-form { max-width: 48rem; display: flex; flex-direction: column; gap: 10px; }
+        .editor-row { display: flex; gap: 10px; align-items: center; }
+        .editor-row label { width: 90px; font-size: 13px; color: #555; }
+        .editor-row input, .editor-row select { flex: 1; padding: 6px 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 14px; }
+        .editor-body { height: 55vh; border: 1px solid #ccc; border-radius: 3px; overflow: hidden; }
+        .editor-actions { display: flex; gap: 10px; margin-top: 10px; }
+
+        /* Auth */
+        .auth-page { display: flex; justify-content: center; align-items: flex-start; padding-top: 10vh; height: calc(100vh - 50px); background: #fafafa; }
+        .auth-form { width: 340px; padding: 24px; border: 1px solid #ddd; background: #fff; border-radius: 6px; }
+        .auth-form h2 { margin-bottom: 14px; font-size: 20px; }
+        .auth-field { margin-bottom: 12px; display: flex; flex-direction: column; gap: 4px; }
+        .auth-field label { font-size: 13px; color: #555; }
+        .auth-field input { padding: 8px; border: 1px solid #ccc; border-radius: 3px; font-size: 14px; }
+        .auth-error { color: #c23; font-size: 13px; margin-bottom: 10px; }
+        .auth-link { margin-top: 12px; font-size: 13px; color: #666; }
+        .auth-link a { color: #0066cc; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script src="/codemirror-element.js"></script>
+    <script src="/elm.js"></script>
+
+    <script>
+        // KaTeX <math-text> custom element — lifted from scripta-app-v4.
+        class MathText extends HTMLElement {
+            static get observedAttributes() { return ['content', 'display']; }
+            connectedCallback() { this.renderMath(); }
+            attributeChangedCallback() { this.renderMath(); }
+            renderMath() {
+                var content = this.getAttribute('content') || '';
+                var displayMode = this.getAttribute('display') === 'true';
+                try {
+                    this.innerHTML = katex.renderToString(content, {
+                        displayMode: displayMode,
+                        throwOnError: false,
+                        trust: true
+                    });
+                } catch(e) {
+                    this.innerHTML = '<span style="color:red">' + (e && e.message ? e.message : 'KaTeX error') + '</span>';
+                }
+            }
+        }
+        customElements.define('math-text', MathText);
+
+        // Flags for Elm
+        var apiBase = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:8085'
+            : window.location.origin;
+
+        var token = localStorage.getItem('greppit-token');
+
+        var app = Elm.Main.init({
+            node: document.getElementById('app'),
+            flags: {
+                apiBase: apiBase,
+                initialToken: token
+            }
+        });
+
+        app.ports.saveToken.subscribe(function(t) {
+            localStorage.setItem('greppit-token', t);
+        });
+        app.ports.removeToken.subscribe(function() {
+            localStorage.removeItem('greppit-token');
+        });
+    </script>
+</body>
+</html>
