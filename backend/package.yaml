@@ -1,0 +1,48 @@
+name: greppit-backend
+version: 0.1.0.0
+
+dependencies:
+  - base >= 4.7 && < 5
+  - aeson
+  - bcrypt
+  - bytestring
+  - containers
+  - hasql
+  - hasql-pool >= 0.9 && < 1
+  - http-types
+  - jose
+  - mtl
+  - servant
+  - servant-auth
+  - servant-auth-server
+  - servant-server
+  - text
+  - time
+  - transformers
+  - uuid
+  - vector
+  - wai
+  - wai-cors
+  - warp
+
+library:
+  source-dirs: src
+
+executables:
+  greppit-backend:
+    main: Main.hs
+    source-dirs: app
+    dependencies:
+      - greppit-backend
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+
+tests:
+  greppit-backend-test:
+    main: Spec.hs
+    source-dirs: test
+    dependencies:
+      - greppit-backend
+      - hspec

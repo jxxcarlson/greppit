@@ -1,0 +1,12 @@
+resolver: lts-22.43
+
+packages:
+  - .
+
+extra-deps: []
+
+# macOS libpq paths (Homebrew on Apple Silicon)
+extra-include-dirs:
+  - /opt/homebrew/opt/libpq/include
+extra-lib-dirs:
+  - /opt/homebrew/opt/libpq/lib
