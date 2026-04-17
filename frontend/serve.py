@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Tiny static dev server for greppit frontend. Runs on port 8011."""
+"""Tiny static dev server for greppit frontend. Reads PORT from env (default 8011)."""
 import http.server
 import socketserver
 import os
 
-PORT = 8011
+PORT = int(os.environ.get("PORT", 8011))
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 Handler = http.server.SimpleHTTPRequestHandler

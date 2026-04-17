@@ -10,6 +10,8 @@ echo "ROOT=${ROOT}"
 [ -f "$ROOT/.env" ] && export $(grep -v '^#' "$ROOT/.env" | xargs)
 
 : "${DATABASE_URL:=postgres://localhost/greppit_dev?sslmode=disable}"
+BE_PORT="${GREPPIT_BACKEND_PORT:-8085}"
+FE_PORT="${GREPPIT_FRONTEND_PORT:-8011}"
 
 usage() {
     echo "Usage: $0 [--backend | --frontend | --all | --help] [--opt]"
@@ -20,14 +22,17 @@ usage() {
     echo "  --all       Rebuild and restart both (default, both backgrounded)"
     echo "  --opt       Use --optimize flag for elm make"
     echo "  --help      Show this help"
+    echo ""
+    echo "Ports come from .env (GREPPIT_BACKEND_PORT, GREPPIT_FRONTEND_PORT)."
+    echo "Current: backend=$BE_PORT frontend=$FE_PORT"
 }
 
 stop_backend() {
-    kill -9 $(lsof -ti :8085) 2>/dev/null && echo "Stopped backend" || echo "No backend running"
+    kill -9 $(lsof -ti :$BE_PORT) 2>/dev/null && echo "Stopped backend ($BE_PORT)" || echo "No backend running on $BE_PORT"
 }
 
 stop_frontend() {
-    kill -9 $(lsof -ti :8011) 2>/dev/null && echo "Stopped frontend" || echo "No frontend running"
+    kill -9 $(lsof -ti :$FE_PORT) 2>/dev/null && echo "Stopped frontend ($FE_PORT)" || echo "No frontend running on $FE_PORT"
 }
 
 build_backend() {
@@ -47,31 +52,31 @@ build_frontend() {
 
 start_backend_fg() {
     cd "$ROOT/backend"
-    echo "=== Starting backend on :8085 (foreground) ==="
+    echo "=== Starting backend on :$BE_PORT (foreground) ==="
     echo "=== Directory: $(pwd) ==="
     echo ""
-    PORT=8085 DATABASE_URL="$DATABASE_URL" exec stack exec greppit-backend
+    PORT="$BE_PORT" DATABASE_URL="$DATABASE_URL" exec stack exec greppit-backend
 }
 
 start_backend_bg() {
-    echo "=== Starting backend on :8085 ==="
+    echo "=== Starting backend on :$BE_PORT ==="
     cd "$ROOT/backend"
-    PORT=8085 DATABASE_URL="$DATABASE_URL" stack exec greppit-backend &
+    PORT="$BE_PORT" DATABASE_URL="$DATABASE_URL" stack exec greppit-backend &
     sleep 1
 }
 
 start_frontend_fg() {
     cd "$ROOT/frontend"
-    echo "=== Starting frontend on :8011 (foreground) ==="
+    echo "=== Starting frontend on :$FE_PORT (foreground) ==="
     echo "=== Directory: $(pwd) ==="
     echo ""
-    exec python3 "$ROOT/frontend/serve.py"
+    exec env PORT="$FE_PORT" python3 "$ROOT/frontend/serve.py"
 }
 
 start_frontend_bg() {
-    echo "=== Starting frontend on :8011 ==="
+    echo "=== Starting frontend on :$FE_PORT ==="
     cd "$ROOT/frontend"
-    python3 "$ROOT/frontend/serve.py" &
+    PORT="$FE_PORT" python3 "$ROOT/frontend/serve.py" &
 }
 
 # Parse arguments
@@ -111,7 +116,7 @@ case "$MODE" in
         start_backend_bg
         start_frontend_bg
         echo ""
-        echo "Done. Open http://localhost:8011"
+        echo "Done. Open http://localhost:$FE_PORT"
         ;;
     --help)
         usage
