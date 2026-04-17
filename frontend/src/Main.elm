@@ -418,6 +418,7 @@ httpError err =
         Http.Timeout        -> "Network timeout"
         Http.NetworkError   -> "Network error"
         Http.BadStatus 401  -> "Invalid email or password"
+        Http.BadStatus 404  -> "Not found"
         Http.BadStatus 409  -> "That email is already registered"
         Http.BadStatus s    -> "Server error (" ++ String.fromInt s ++ ")"
         Http.BadBody _      -> "Unexpected server response"
