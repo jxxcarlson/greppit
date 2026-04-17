@@ -7,6 +7,9 @@ import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Http
+import Process
+import Search
+import Task
 import Types exposing (..)
 
 
@@ -117,7 +120,10 @@ updateSignedOut msg f model =
 
         AuthResponded (Ok ( tok, user )) ->
             ( { model | auth = SignedIn (initSignedIn tok user) }
-            , saveToken tok
+            , Cmd.batch
+                [ saveToken tok
+                , Api.listSnippets model.apiBase tok "" SearchResponded
+                ]
             )
 
         AuthResponded (Err err) ->
@@ -127,7 +133,7 @@ updateSignedOut msg f model =
 
         TokenValidated tok (Ok user) ->
             ( { model | auth = SignedIn (initSignedIn tok user) }
-            , Cmd.none
+            , Api.listSnippets model.apiBase tok "" SearchResponded
             )
 
         TokenValidated _ (Err _) ->
@@ -144,6 +150,44 @@ updateSignedIn msg s model =
         SignedOutPressed ->
             ( { model | auth = SignedOut (emptyAuthForm LoginMode) }
             , removeToken ()
+            )
+
+        SearchInputChanged q ->
+            let
+                nextTick = s.searchTick + 1
+                newS = { s | searchInput = q, searchTick = nextTick }
+            in
+            ( { model | auth = SignedIn newS }
+            , Task.perform (\_ -> SearchDebounceTick nextTick q) (Process.sleep 200)
+            )
+
+        SearchDebounceTick tick q ->
+            if tick /= s.searchTick then
+                ( model, Cmd.none )
+            else
+                ( model
+                , Api.listSnippets model.apiBase s.token q SearchResponded
+                )
+
+        SearchResponded (Ok results) ->
+            ( { model | auth = SignedIn { s | results = results } }, Cmd.none )
+
+        SearchResponded (Err _) ->
+            ( model, Cmd.none )
+
+        SelectResult sid ->
+            let
+                mSnippet = List.filter (\x -> x.id == sid) s.results |> List.head
+            in
+            ( { model
+                | auth =
+                    SignedIn
+                        { s
+                            | selectedId = Just sid
+                            , rightMode = DisplayMode mSnippet
+                        }
+              }
+            , Cmd.none
             )
 
         _ ->
@@ -179,7 +223,13 @@ view model =
             div []
                 [ header (Just s.user.email)
                 , div [ class "app" ]
-                    [ div [ class "col-left" ] [ text "(search and results go here)" ]
+                    [ div [ class "col-left" ]
+                        [ Search.view
+                            { searchInput = s.searchInput
+                            , results = s.results
+                            , selectedId = s.selectedId
+                            }
+                        ]
                     , div [ class "col-right" ] [ text "(display / editor goes here)" ]
                     ]
                 ]
