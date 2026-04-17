@@ -1,0 +1,32 @@
+[Unit]
+Description=greppit backend
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+
+# Adjust User / paths if you don't run as root.
+User=root
+WorkingDirectory=/root/greppit/backend
+
+# DATABASE_URL, JWT_SECRET, JWT_EXPIRY_DAYS, GREPPIT_BACKEND_PORT, etc.
+# live in /root/greppit/.env — see deploy/README.md.
+EnvironmentFile=/root/greppit/.env
+
+# The backend reads PORT from env; mirror GREPPIT_BACKEND_PORT into PORT
+# so a single knob in .env controls both the systemd unit and the scripts.
+# (systemd does not do shell interpolation on Environment=; set PORT in .env
+# directly, e.g. PORT=8086.)
+
+ExecStart=/usr/local/bin/stack exec greppit-backend
+Restart=on-failure
+RestartSec=3
+
+# Lock down the service a little.
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
