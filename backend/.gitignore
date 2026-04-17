@@ -3,3 +3,5 @@ dist-newstyle/
 *.cabal
 .env
 db/schema.sql
+build.log
+stack.yaml.lock
