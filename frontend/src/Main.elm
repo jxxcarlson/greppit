@@ -302,17 +302,23 @@ updateSignedIn msg s model =
         SaveSnippet ->
             case s.rightMode of
                 EditorMode e ->
+                    let
+                        input =
+                            { title = e.title, tags = e.tags, markup = e.markup, body = e.body }
+
+                        newE = { e | saving = True, errorMessage = Nothing }
+                        newS = { s | rightMode = EditorMode newE }
+                    in
                     case e.editing of
                         Nothing ->
-                            ( { model | auth = SignedIn { s | rightMode = EditorMode { e | saving = True, errorMessage = Nothing } } }
-                            , Api.createSnippet model.apiBase s.token
-                                { title = e.title, tags = e.tags, markup = e.markup, body = e.body }
-                                CreateResponded
+                            ( { model | auth = SignedIn newS }
+                            , Api.createSnippet model.apiBase s.token input CreateResponded
                             )
 
-                        Just _ ->
-                            -- Edit-mode save is handled in Task 12; no-op for now.
-                            ( model, Cmd.none )
+                        Just snippet ->
+                            ( { model | auth = SignedIn newS }
+                            , Api.updateSnippet model.apiBase s.token snippet.id input UpdateResponded
+                            )
 
                 _ ->
                     ( model, Cmd.none )
@@ -331,6 +337,74 @@ updateSignedIn msg s model =
             )
 
         CreateResponded (Err err) ->
+            ( updateEditorError s model err, Cmd.none )
+
+        UpdateResponded (Ok snippet) ->
+            let
+                newResults =
+                    s.results
+                        |> List.map (\x -> if x.id == snippet.id then snippet else x)
+            in
+            ( { model
+                | auth =
+                    SignedIn
+                        { s
+                            | results = newResults
+                            , selectedId = Just snippet.id
+                            , rightMode = DisplayMode (Just snippet)
+                        }
+              }
+            , Cmd.none
+            )
+
+        UpdateResponded (Err err) ->
+            ( updateEditorError s model err, Cmd.none )
+
+        DeletePressed ->
+            mapEditor s model (\e -> { e | showDeleteConfirm = True })
+
+        CancelDelete ->
+            mapEditor s model (\e -> { e | showDeleteConfirm = False })
+
+        ConfirmDelete ->
+            case s.rightMode of
+                EditorMode e ->
+                    case e.editing of
+                        Just snippet ->
+                            ( { model | auth = SignedIn { s | rightMode = EditorMode { e | saving = True } } }
+                            , Api.deleteSnippet model.apiBase s.token snippet.id (DeleteResponded snippet.id)
+                            )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        DeleteResponded sid (Ok ()) ->
+            let
+                newResults = List.filter (\x -> x.id /= sid) s.results
+
+                ( nextSelected, nextMode ) =
+                    case List.head newResults of
+                        Just first ->
+                            ( Just first.id, DisplayMode (Just first) )
+                        Nothing ->
+                            ( Nothing, DisplayMode Nothing )
+            in
+            ( { model
+                | auth =
+                    SignedIn
+                        { s
+                            | results = newResults
+                            , selectedId = nextSelected
+                            , rightMode = nextMode
+                        }
+              }
+            , Cmd.none
+            )
+
+        DeleteResponded _ (Err err) ->
             ( updateEditorError s model err, Cmd.none )
 
         _ ->
