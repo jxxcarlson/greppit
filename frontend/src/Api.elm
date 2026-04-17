@@ -1,6 +1,6 @@
 module Api exposing
     ( signup, login, me
-    , listSnippets, getSnippet, createSnippet, updateSnippet, deleteSnippet
+    , listSnippets, createSnippet, updateSnippet, deleteSnippet
     , userDecoder, snippetDecoder, authResponseDecoder
     )
 
@@ -126,22 +126,6 @@ listSnippets apiBase token query toMsg =
         , url = url
         , body = Http.emptyBody
         , expect = Http.expectJson toMsg (D.list snippetDecoder)
-        , timeout = Nothing
-        , tracker = Nothing
-        }
-
-
-getSnippet :
-    String -> String -> String
-    -> (Result Http.Error Snippet -> msg)
-    -> Cmd msg
-getSnippet apiBase token sid toMsg =
-    Http.request
-        { method = "GET"
-        , headers = [ authHeader token ]
-        , url = apiBase ++ "/api/snippets/" ++ sid
-        , body = Http.emptyBody
-        , expect = Http.expectJson toMsg snippetDecoder
         , timeout = Nothing
         , tracker = Nothing
         }
