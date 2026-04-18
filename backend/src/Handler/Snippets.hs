@@ -55,7 +55,8 @@ toResp s = SnippetResponse
 parseMarkupOrFail :: Text -> AppM Text
 parseMarkupOrFail t = case parseMarkup t of
   Just _  -> pure t
-  Nothing -> throwError $ appErrorToServantErr (InvalidInput "markup must be \"markdown\" or \"scripta\"")
+  Nothing -> throwError $ appErrorToServantErr
+               (InvalidInput "markup must be \"markdown\", \"plaintext\", or \"scripta\"")
 
 listSnippetsHandler
   :: AuthResult AuthUser -> Maybe Text -> AppM [SnippetResponse]

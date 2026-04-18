@@ -47,8 +47,9 @@ view st =
             [ label [] [ text "Markup" ]
             , select
                 [ onInput (\v -> EditorMarkupChanged (Maybe.withDefault Markdown (stringToMarkup v))) ]
-                [ option [ value "markdown", selected (st.markup == Markdown) ] [ text "Markdown" ]
-                , option [ value "scripta",  selected (st.markup == Scripta)  ] [ text "Scripta" ]
+                [ option [ value "markdown",  selected (st.markup == Markdown)  ] [ text "Markdown" ]
+                , option [ value "plaintext", selected (st.markup == PlainText) ] [ text "Plain text" ]
+                , option [ value "scripta",   selected (st.markup == Scripta)   ] [ text "Scripta" ]
                 ]
             ]
         , div [ class "editor-body" ]

@@ -48,6 +48,16 @@ suite =
                     |> Result.map .markup
                     |> Expect.equal (Ok Scripta)
 
+        , test "snippetDecoder (plaintext)" <|
+            \_ ->
+                let
+                    json =
+                        "{\"id\":\"s4\",\"userId\":\"u1\",\"title\":\"\",\"tags\":\"\",\"markup\":\"plaintext\",\"body\":\"line1\\nline2\",\"createdAt\":\"2026-04-17T12:00:00Z\",\"updatedAt\":\"2026-04-17T12:00:00Z\"}"
+                in
+                D.decodeString Api.snippetDecoder json
+                    |> Result.map .markup
+                    |> Expect.equal (Ok PlainText)
+
         , test "snippetDecoder rejects unknown markup" <|
             \_ ->
                 let

@@ -34,21 +34,24 @@ type alias User =
 type Markup
     = Markdown
     | Scripta
+    | PlainText
 
 
 markupToString : Markup -> String
 markupToString m =
     case m of
-        Markdown -> "markdown"
-        Scripta  -> "scripta"
+        Markdown  -> "markdown"
+        Scripta   -> "scripta"
+        PlainText -> "plaintext"
 
 
 stringToMarkup : String -> Maybe Markup
 stringToMarkup s =
     case s of
-        "markdown" -> Just Markdown
-        "scripta"  -> Just Scripta
-        _          -> Nothing
+        "markdown"  -> Just Markdown
+        "scripta"   -> Just Scripta
+        "plaintext" -> Just PlainText
+        _           -> Nothing
 
 
 type alias Snippet =

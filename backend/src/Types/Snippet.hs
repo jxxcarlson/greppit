@@ -5,17 +5,19 @@ import Data.Text (Text)
 import Data.Time (UTCTime)
 import Types.Common (UserId, SnippetId)
 
-data Markup = Markdown | Scripta
+data Markup = Markdown | Scripta | PlainText
   deriving (Show, Eq)
 
 parseMarkup :: Text -> Maybe Markup
-parseMarkup "markdown" = Just Markdown
-parseMarkup "scripta"  = Just Scripta
-parseMarkup _          = Nothing
+parseMarkup "markdown"  = Just Markdown
+parseMarkup "scripta"   = Just Scripta
+parseMarkup "plaintext" = Just PlainText
+parseMarkup _           = Nothing
 
 markupText :: Markup -> Text
-markupText Markdown = "markdown"
-markupText Scripta  = "scripta"
+markupText Markdown  = "markdown"
+markupText Scripta   = "scripta"
+markupText PlainText = "plaintext"
 
 data Snippet = Snippet
   { snpId        :: SnippetId
