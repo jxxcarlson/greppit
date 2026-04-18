@@ -10,6 +10,14 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 Handler = http.server.SimpleHTTPRequestHandler
 Handler.extensions_map['.js'] = 'application/javascript'
 
-with socketserver.TCPServer(("", PORT), Handler) as httpd:
+
+class ReusableTCPServer(socketserver.TCPServer):
+    """Set SO_REUSEADDR so restart.sh can rebind the port immediately
+    after killing the previous serve.py, instead of waiting ~60s for
+    the kernel's TIME_WAIT to clear."""
+    allow_reuse_address = True
+
+
+with ReusableTCPServer(("", PORT), Handler) as httpd:
     print(f"greppit frontend serving at http://localhost:{PORT}")
     httpd.serve_forever()
