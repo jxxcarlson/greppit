@@ -467,7 +467,7 @@ view model =
 
         SignedIn s ->
             div []
-                [ header (Just s.user.email)
+                [ header (Just { email = s.user.email, count = List.length s.results })
                 , div [ class "app" ]
                     [ div [ class "col-left" ]
                         [ Search.view
@@ -521,16 +521,27 @@ viewRight s =
                 [ Editor.view e ]
 
 
-header : Maybe String -> Html Msg
-header mEmail =
+header : Maybe { email : String, count : Int } -> Html Msg
+header mInfo =
     div [ class "header" ]
-        [ div [ class "header-title" ] [ text "greppit" ]
+        [ div [ class "header-left" ]
+            ([ div [ class "header-title" ] [ text "greppit" ]
+             , div [ class "header-version" ] [ text "v1" ]
+             ]
+                ++ (case mInfo of
+                        Just info ->
+                            [ div [ class "header-count" ] [ text (snippetCountText info.count) ] ]
+
+                        Nothing ->
+                            []
+                   )
+            )
         , div [ class "header-right" ]
-            (case mEmail of
-                Just email ->
+            (case mInfo of
+                Just info ->
                     [ button [ class "btn btn-primary", onClick NewSnippetPressed ]
                         [ text "New snippet" ]
-                    , div [ class "header-email" ] [ text email ]
+                    , div [ class "header-email" ] [ text info.email ]
                     , button [ class "btn btn-secondary", onClick SignedOutPressed ]
                         [ text "Sign out" ]
                     ]
@@ -539,3 +550,8 @@ header mEmail =
                     []
             )
         ]
+
+
+snippetCountText : Int -> String
+snippetCountText n =
+    String.fromInt n ++ (if n == 1 then " snippet" else " snippets")

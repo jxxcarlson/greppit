@@ -9,7 +9,9 @@ import Types exposing (AuthForm, AuthMode(..), Msg(..))
 view : AuthForm -> Html Msg
 view f =
     div [ class "auth-page" ]
-        [ div [ class "auth-form" ]
+        [ div [ class "auth-tagline" ]
+            [ text "Greppit: a manager for snippets of text. Supports extended markdown and plain text." ]
+        , div [ class "auth-form" ]
             [ h2 []
                 [ text
                     (case f.mode of
