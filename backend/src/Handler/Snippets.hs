@@ -63,9 +63,11 @@ listSnippetsHandler
 listSnippetsHandler auth mq = do
   userId <- requireUser auth
   pool   <- asks envDbPool
-  let patterns = Search.termsToIlikePatterns mq
   result <- liftIO $ Pool.use pool $
-              Session.statement (userId, patterns) Db.searchSnippets
+    if Search.isAllSentinel mq
+      then Session.statement userId Db.listAllSnippets
+      else let patterns = Search.termsToIlikePatterns mq
+           in Session.statement (userId, patterns) Db.searchSnippets
   case result of
     Left _    -> throwError $ appErrorToServantErr (InternalError "database error")
     Right vec -> pure $ map toResp (V.toList vec)
