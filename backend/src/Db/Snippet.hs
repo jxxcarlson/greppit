@@ -6,6 +6,7 @@ module Db.Snippet
   , updateSnippet
   , deleteSnippet
   , searchSnippets
+  , listAllSnippets
   ) where
 
 import Data.Functor.Contravariant ((>$<))
@@ -102,3 +103,14 @@ searchSnippets = Statement sql encoder (D.rowVector snippetRow) True
       (fst >$< E.param (E.nonNullable E.text)) <>
       (snd >$< E.param (E.nonNullable
         (E.array (E.dimension foldl (E.element (E.nonNullable E.text))))))
+
+-- | List every snippet owned by the user, newest-updated first.
+-- No text filter. No LIMIT. Used by the @all sentinel path.
+listAllSnippets :: Statement UserId (Vector Snippet)
+listAllSnippets = Statement sql encoder (D.rowVector snippetRow) True
+  where
+    sql = "SELECT id, user_id, title, tags, markup, body, created_at, updated_at \
+          \FROM snippets \
+          \WHERE user_id = $1 \
+          \ORDER BY updated_at DESC"
+    encoder = E.param (E.nonNullable E.text)
