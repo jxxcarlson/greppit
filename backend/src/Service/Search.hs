@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Service.Search (termsToIlikePatterns) where
+module Service.Search
+  ( termsToIlikePatterns
+  , isAllSentinel
+  ) where
 
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -21,3 +24,10 @@ termsToIlikePatterns :: Maybe Text -> Vector Text
 termsToIlikePatterns Nothing   = V.empty
 termsToIlikePatterns (Just q)  =
   V.fromList [ "%" <> escapeLike t <> "%" | t <- T.words q, not (T.null t) ]
+
+-- | True iff the query is the literal sentinel @all, after trimming
+-- surrounding whitespace and folding case. Any other value — including
+-- @all combined with other tokens — is False.
+isAllSentinel :: Maybe Text -> Bool
+isAllSentinel Nothing  = False
+isAllSentinel (Just t) = T.toLower (T.strip t) == "@all"
