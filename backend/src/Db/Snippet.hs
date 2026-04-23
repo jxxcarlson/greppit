@@ -54,24 +54,27 @@ insertSnippet = Statement sql encoder D.noResult True
       ((\(_,_,_,_,_,f,_) -> f) >$< E.param (E.nonNullable E.text)) <>
       ((\(_,_,_,_,_,_,g) -> g) >$< E.param (E.nonNullable E.text))
 
--- | Fetch a snippet scoped to a user. Returns Nothing if not owned / missing.
+-- | Fetch a snippet scoped to a user, by either its UUID `id`
+-- or its external `zku_id`. Returns Nothing if not owned / missing.
 getSnippetById :: Statement (SnippetId, UserId) (Maybe Snippet)
 getSnippetById = Statement sql encoder (D.rowMaybe snippetRow) True
   where
     sql = "SELECT id, user_id, zku_id, title, tags, markup, body, created_at, updated_at \
-          \FROM snippets WHERE id = $1 AND user_id = $2"
+          \FROM snippets WHERE (id = $1 OR zku_id = $1) AND user_id = $2"
     encoder =
       (fst >$< E.param (E.nonNullable E.text)) <>
       (snd >$< E.param (E.nonNullable E.text))
 
 -- | UPDATE a snippet's mutable fields. Also bumps updated_at = now().
--- Takes (id, userId, title, tags, markup, body). Returns number of rows affected.
+-- zku_id is NOT part of the SET list — it's immutable by design.
+-- Matches on either the UUID `id` or the `zku_id`.
+-- Takes (id, userId, title, tags, markup, body). Returns rows affected.
 updateSnippet :: Statement (SnippetId, UserId, Text, Text, Text, Text) Int
 updateSnippet = Statement sql encoder (fromIntegral <$> D.rowsAffected) True
   where
     sql = "UPDATE snippets \
           \SET title = $3, tags = $4, markup = $5, body = $6, updated_at = now() \
-          \WHERE id = $1 AND user_id = $2"
+          \WHERE (id = $1 OR zku_id = $1) AND user_id = $2"
     encoder =
       ((\(a,_,_,_,_,_) -> a) >$< E.param (E.nonNullable E.text)) <>
       ((\(_,b,_,_,_,_) -> b) >$< E.param (E.nonNullable E.text)) <>
@@ -80,11 +83,12 @@ updateSnippet = Statement sql encoder (fromIntegral <$> D.rowsAffected) True
       ((\(_,_,_,_,e,_) -> e) >$< E.param (E.nonNullable E.text)) <>
       ((\(_,_,_,_,_,f) -> f) >$< E.param (E.nonNullable E.text))
 
--- | DELETE a snippet scoped to a user. Returns rows affected (0 or 1).
+-- | DELETE a snippet scoped to a user. Matches on UUID `id` or `zku_id`.
+-- Returns rows affected (0 or 1).
 deleteSnippet :: Statement (SnippetId, UserId) Int
 deleteSnippet = Statement sql encoder (fromIntegral <$> D.rowsAffected) True
   where
-    sql = "DELETE FROM snippets WHERE id = $1 AND user_id = $2"
+    sql = "DELETE FROM snippets WHERE (id = $1 OR zku_id = $1) AND user_id = $2"
     encoder =
       (fst >$< E.param (E.nonNullable E.text)) <>
       (snd >$< E.param (E.nonNullable E.text))
