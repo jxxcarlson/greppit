@@ -15,7 +15,7 @@ import qualified Data.ByteString.Lazy as LBS
 import Data.ByteString (ByteString)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text.Encoding (decodeUtf8, decodeUtf8Lenient)
 import Data.Time.Clock (getCurrentTime, UTCTime, addUTCTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as UUID
@@ -146,10 +146,12 @@ uniqueViolationConstraint = \case
       | otherwise       -> Nothing
   _ -> Nothing
   where
-    -- Postgres message format:
+    -- Postgres message format (all locales quote the constraint name):
     --   duplicate key value violates unique constraint "NAME"
     -- splitOn "\"" yields [before, NAME, after]. We take element 1.
+    -- Lenient UTF-8 decoding avoids a partial-function crash if lc_messages
+    -- is ever set to a non-UTF-8 locale.
     extractConstraint :: ByteString -> Maybe Text
-    extractConstraint bs = case T.splitOn "\"" (decodeUtf8 bs) of
+    extractConstraint bs = case T.splitOn "\"" (decodeUtf8Lenient bs) of
       (_ : name : _) -> Just name
       _              -> Nothing
