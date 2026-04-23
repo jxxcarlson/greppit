@@ -19,6 +19,12 @@ markupText Markdown  = "markdown"
 markupText Scripta   = "scripta"
 markupText PlainText = "plaintext"
 
+-- NOTE: Field order matters. `Db.Snippet.snippetRow` is a positional
+-- applicative decoder that depends on this order matching the DB column
+-- order `id, user_id, zku_id, title, tags, markup, body, created_at,
+-- updated_at`. Reordering fields here without updating `snippetRow` and
+-- every SELECT column list in `Db.Snippet` will silently produce
+-- type-correct but semantically garbage rows.
 data Snippet = Snippet
   { snpId        :: SnippetId
   , snpUserId    :: UserId
