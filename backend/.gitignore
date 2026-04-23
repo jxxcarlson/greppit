@@ -5,3 +5,6 @@ dist-newstyle/
 db/schema.sql
 build.log
 stack.yaml.lock
+
+# Local migration test fixtures — not shipped.
+dbmate/validation/003_fixtures.sql
