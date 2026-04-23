@@ -57,6 +57,7 @@ stringToMarkup s =
 type alias Snippet =
     { id : String
     , userId : String
+    , zkuId : String
     , title : String
     , tags : String
     , markup : Markup

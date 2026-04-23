@@ -32,17 +32,17 @@ suite =
             \_ ->
                 let
                     json =
-                        "{\"id\":\"s1\",\"userId\":\"u1\",\"title\":\"t\",\"tags\":\"a b\",\"markup\":\"markdown\",\"body\":\"# h\",\"createdAt\":\"2026-04-17T12:00:00Z\",\"updatedAt\":\"2026-04-17T12:00:00Z\"}"
+                        "{\"id\":\"s1\",\"userId\":\"u1\",\"zkuId\":\"alice-20260118003017\",\"title\":\"t\",\"tags\":\"a b\",\"markup\":\"markdown\",\"body\":\"# h\",\"createdAt\":\"2026-04-17T12:00:00Z\",\"updatedAt\":\"2026-04-17T12:00:00Z\"}"
                 in
                 D.decodeString Api.snippetDecoder json
-                    |> Result.map (\s -> ( s.id, s.title, s.markup ))
-                    |> Expect.equal (Ok ( "s1", "t", Markdown ))
+                    |> Result.map (\s -> ( s.id, s.zkuId, s.markup ))
+                    |> Expect.equal (Ok ( "s1", "alice-20260118003017", Markdown ))
 
         , test "snippetDecoder (scripta)" <|
             \_ ->
                 let
                     json =
-                        "{\"id\":\"s2\",\"userId\":\"u1\",\"title\":\"\",\"tags\":\"\",\"markup\":\"scripta\",\"body\":\"\",\"createdAt\":\"2026-04-17T12:00:00Z\",\"updatedAt\":\"2026-04-17T12:00:00Z\"}"
+                        "{\"id\":\"s2\",\"userId\":\"u1\",\"zkuId\":\"bob-20260118003017\",\"title\":\"\",\"tags\":\"\",\"markup\":\"scripta\",\"body\":\"\",\"createdAt\":\"2026-04-17T12:00:00Z\",\"updatedAt\":\"2026-04-17T12:00:00Z\"}"
                 in
                 D.decodeString Api.snippetDecoder json
                     |> Result.map .markup
@@ -52,7 +52,7 @@ suite =
             \_ ->
                 let
                     json =
-                        "{\"id\":\"s4\",\"userId\":\"u1\",\"title\":\"\",\"tags\":\"\",\"markup\":\"plaintext\",\"body\":\"line1\\nline2\",\"createdAt\":\"2026-04-17T12:00:00Z\",\"updatedAt\":\"2026-04-17T12:00:00Z\"}"
+                        "{\"id\":\"s4\",\"userId\":\"u1\",\"zkuId\":\"carol-20260118003017\",\"title\":\"\",\"tags\":\"\",\"markup\":\"plaintext\",\"body\":\"line1\\nline2\",\"createdAt\":\"2026-04-17T12:00:00Z\",\"updatedAt\":\"2026-04-17T12:00:00Z\"}"
                 in
                 D.decodeString Api.snippetDecoder json
                     |> Result.map .markup
@@ -62,7 +62,7 @@ suite =
             \_ ->
                 let
                     json =
-                        "{\"id\":\"s3\",\"userId\":\"u1\",\"title\":\"\",\"tags\":\"\",\"markup\":\"latex\",\"body\":\"\",\"createdAt\":\"2026-04-17T12:00:00Z\",\"updatedAt\":\"2026-04-17T12:00:00Z\"}"
+                        "{\"id\":\"s3\",\"userId\":\"u1\",\"zkuId\":\"dave-20260118003017\",\"title\":\"\",\"tags\":\"\",\"markup\":\"latex\",\"body\":\"\",\"createdAt\":\"2026-04-17T12:00:00Z\",\"updatedAt\":\"2026-04-17T12:00:00Z\"}"
                 in
                 D.decodeString Api.snippetDecoder json
                     |> (\r -> case r of

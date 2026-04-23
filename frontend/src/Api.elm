@@ -42,17 +42,23 @@ markupDecoder =
             )
 
 
+andMap : D.Decoder a -> D.Decoder (a -> b) -> D.Decoder b
+andMap =
+    D.map2 (|>)
+
+
 snippetDecoder : D.Decoder Snippet
 snippetDecoder =
-    D.map8 Snippet
-        (D.field "id" D.string)
-        (D.field "userId" D.string)
-        (D.field "title" D.string)
-        (D.field "tags" D.string)
-        (D.field "markup" markupDecoder)
-        (D.field "body" D.string)
-        (D.field "createdAt" Iso8601.decoder)
-        (D.field "updatedAt" Iso8601.decoder)
+    D.succeed Snippet
+        |> andMap (D.field "id" D.string)
+        |> andMap (D.field "userId" D.string)
+        |> andMap (D.field "zkuId" D.string)
+        |> andMap (D.field "title" D.string)
+        |> andMap (D.field "tags" D.string)
+        |> andMap (D.field "markup" markupDecoder)
+        |> andMap (D.field "body" D.string)
+        |> andMap (D.field "createdAt" Iso8601.decoder)
+        |> andMap (D.field "updatedAt" Iso8601.decoder)
 
 
 credsEncoder : { email : String, password : String } -> E.Value
