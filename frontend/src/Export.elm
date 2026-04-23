@@ -1,7 +1,7 @@
-module Export exposing (baseIdOf, filename, formatTags, sanitizeTitle)
+module Export exposing (baseIdOf, body, filename, formatTags, sanitizeTitle)
 
 import Char
-import Types exposing (Snippet)
+import Types exposing (Snippet, markupToString)
 
 
 {-| Strip a zku_id's username prefix. Takes everything after the first '-'.
@@ -116,3 +116,38 @@ formatTags raw =
 
         tokens ->
             Just ("Tags: " ++ String.join ", " (List.map (\t -> "#" ++ t) tokens))
+
+
+{-| Assemble the exported file body:
+
+    <body with trailing newlines trimmed>
+    <one blank line>
+    Tags: #a, #b        (omitted entirely if no tags)
+    markup: <markup>
+    <trailing newline>
+
+-}
+body : Snippet -> String
+body snippet =
+    let
+        trimmedBody =
+            stripTrailingNewlines snippet.body
+
+        trailerLines =
+            case formatTags snippet.tags of
+                Just tagsLine ->
+                    [ tagsLine, "markup: " ++ markupToString snippet.markup ]
+
+                Nothing ->
+                    [ "markup: " ++ markupToString snippet.markup ]
+    in
+    trimmedBody ++ "\n\n" ++ String.join "\n" trailerLines ++ "\n"
+
+
+stripTrailingNewlines : String -> String
+stripTrailingNewlines s =
+    if String.endsWith "\n" s then
+        stripTrailingNewlines (String.dropRight 1 s)
+
+    else
+        s

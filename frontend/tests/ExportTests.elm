@@ -103,6 +103,53 @@ suite =
                     Export.formatTags "  alpha   beta  "
                         |> Expect.equal (Just "Tags: #alpha, #beta")
             ]
+        , describe "body"
+            [ test "with tags and markdown markup" <|
+                \_ ->
+                    let
+                        s =
+                            fixture { zkuId = "jxxcarlson-20260118003017", title = "t" }
+                    in
+                    { s | body = "Some body text.", tags = "alpha beta", markup = Markdown }
+                        |> Export.body
+                        |> Expect.equal "Some body text.\n\nTags: #alpha, #beta\nmarkup: markdown\n"
+            , test "omits Tags line when no tags" <|
+                \_ ->
+                    let
+                        s =
+                            fixture { zkuId = "x-20260118003017", title = "t" }
+                    in
+                    { s | body = "Body.", tags = "", markup = Markdown }
+                        |> Export.body
+                        |> Expect.equal "Body.\n\nmarkup: markdown\n"
+            , test "scripta markup variant" <|
+                \_ ->
+                    let
+                        s =
+                            fixture { zkuId = "x-20260118003017", title = "t" }
+                    in
+                    { s | body = "B", tags = "", markup = Scripta }
+                        |> Export.body
+                        |> Expect.equal "B\n\nmarkup: scripta\n"
+            , test "plaintext markup variant" <|
+                \_ ->
+                    let
+                        s =
+                            fixture { zkuId = "x-20260118003017", title = "t" }
+                    in
+                    { s | body = "B", tags = "", markup = PlainText }
+                        |> Export.body
+                        |> Expect.equal "B\n\nmarkup: plaintext\n"
+            , test "trims trailing newlines from body to one blank separator" <|
+                \_ ->
+                    let
+                        s =
+                            fixture { zkuId = "x-20260118003017", title = "t" }
+                    in
+                    { s | body = "B\n\n\n", tags = "", markup = Markdown }
+                        |> Export.body
+                        |> Expect.equal "B\n\nmarkup: markdown\n"
+            ]
         , describe "filename"
             [ test "base id + sanitized title" <|
                 \_ ->
