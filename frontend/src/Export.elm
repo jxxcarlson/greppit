@@ -1,6 +1,7 @@
-module Export exposing (baseIdOf, sanitizeTitle)
+module Export exposing (baseIdOf, filename, sanitizeTitle)
 
 import Char
+import Types exposing (Snippet)
 
 
 {-| Strip a zku_id's username prefix. Takes everything after the first '-'.
@@ -81,3 +82,24 @@ replaceIllegal c =
 isAscii : Char -> Bool
 isAscii c =
     Char.toCode c < 128
+
+
+{-| Derive the export filename from a Snippet.
+
+Pattern: "<baseId> <sanitizedTitle>.txt" if the sanitized title is
+non-empty, else "<baseId>.txt".
+-}
+filename : Snippet -> String
+filename snippet =
+    let
+        base =
+            baseIdOf snippet.zkuId
+
+        sanitized =
+            sanitizeTitle snippet.title
+    in
+    if String.isEmpty sanitized then
+        base ++ ".txt"
+
+    else
+        base ++ " " ++ sanitized ++ ".txt"

@@ -3,6 +3,22 @@ module ExportTests exposing (suite)
 import Expect
 import Export
 import Test exposing (Test, describe, test)
+import Time
+import Types exposing (Markup(..), Snippet)
+
+
+fixture : { zkuId : String, title : String } -> Snippet
+fixture x =
+    { id = "00000000-0000-0000-0000-000000000000"
+    , userId = "u1"
+    , zkuId = x.zkuId
+    , title = x.title
+    , tags = ""
+    , markup = Markdown
+    , body = ""
+    , createdAt = Time.millisToPosix 0
+    , updatedAt = Time.millisToPosix 0
+    }
 
 
 suite : Test
@@ -64,5 +80,37 @@ suite =
                     Export.sanitizeTitle (String.repeat 200 "a")
                         |> String.length
                         |> Expect.equal 120
+            ]
+        , describe "filename"
+            [ test "base id + sanitized title" <|
+                \_ ->
+                    fixture { zkuId = "jxxcarlson-20260118003017", title = "Painting Random Walk" }
+                        |> Export.filename
+                        |> Expect.equal "20260118003017 Painting Random Walk.txt"
+            , test "empty title uses base id alone" <|
+                \_ ->
+                    fixture { zkuId = "jxxcarlson-20260118003017", title = "" }
+                        |> Export.filename
+                        |> Expect.equal "20260118003017.txt"
+            , test "whitespace-only title uses base id alone" <|
+                \_ ->
+                    fixture { zkuId = "jxxcarlson-20260118003017", title = "   " }
+                        |> Export.filename
+                        |> Expect.equal "20260118003017.txt"
+            , test "all-non-ASCII title uses base id alone" <|
+                \_ ->
+                    fixture { zkuId = "jxxcarlson-20260118003017", title = "思考" }
+                        |> Export.filename
+                        |> Expect.equal "20260118003017.txt"
+            , test "collision suffix is preserved" <|
+                \_ ->
+                    fixture { zkuId = "jxxcarlson-20260118003017-2", title = "Some Title" }
+                        |> Export.filename
+                        |> Expect.equal "20260118003017-2 Some Title.txt"
+            , test "illegal chars sanitized" <|
+                \_ ->
+                    fixture { zkuId = "jxxcarlson-20260118003017", title = "a/b:c" }
+                        |> Export.filename
+                        |> Expect.equal "20260118003017 a b c.txt"
             ]
         ]
