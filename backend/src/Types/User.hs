@@ -8,5 +8,6 @@ data User = User
   { usrId         :: UserId
   , usrEmail      :: Text
   , usrPwHash     :: Text
+  , usrUsername   :: Text
   , usrCreatedAt  :: UTCTime
   } deriving (Show, Eq)

@@ -20,8 +20,9 @@ import Crypto.JOSE.JWK (fromOctets)
 import Types.Common (UserId)
 
 data AuthUser = AuthUser
-  { auUserId :: UserId
-  , auEmail  :: Text
+  { auUserId   :: UserId
+  , auEmail    :: Text
+  , auUsername :: Text
   } deriving (Show, Eq, Generic)
 
 instance FromJSON AuthUser
