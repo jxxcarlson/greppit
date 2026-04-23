@@ -37,20 +37,21 @@ snippetRow = Snippet
       Just m  -> Right m
       Nothing -> Left ("unknown markup: " <> t)
 
--- | INSERT a snippet. Takes (id, userId, title, tags, markup, body).
+-- | INSERT a snippet. Takes (id, userId, zkuId, title, tags, markup, body).
 -- created_at / updated_at default to now() on the DB side.
-insertSnippet :: Statement (SnippetId, UserId, Text, Text, Text, Text) ()
+insertSnippet :: Statement (SnippetId, UserId, Text, Text, Text, Text, Text) ()
 insertSnippet = Statement sql encoder D.noResult True
   where
-    sql = "INSERT INTO snippets (id, user_id, title, tags, markup, body) \
-          \VALUES ($1, $2, $3, $4, $5, $6)"
+    sql = "INSERT INTO snippets (id, user_id, zku_id, title, tags, markup, body) \
+          \VALUES ($1, $2, $3, $4, $5, $6, $7)"
     encoder =
-      ((\(a,_,_,_,_,_) -> a) >$< E.param (E.nonNullable E.text)) <>
-      ((\(_,b,_,_,_,_) -> b) >$< E.param (E.nonNullable E.text)) <>
-      ((\(_,_,c,_,_,_) -> c) >$< E.param (E.nonNullable E.text)) <>
-      ((\(_,_,_,d,_,_) -> d) >$< E.param (E.nonNullable E.text)) <>
-      ((\(_,_,_,_,e,_) -> e) >$< E.param (E.nonNullable E.text)) <>
-      ((\(_,_,_,_,_,f) -> f) >$< E.param (E.nonNullable E.text))
+      ((\(a,_,_,_,_,_,_) -> a) >$< E.param (E.nonNullable E.text)) <>
+      ((\(_,b,_,_,_,_,_) -> b) >$< E.param (E.nonNullable E.text)) <>
+      ((\(_,_,c,_,_,_,_) -> c) >$< E.param (E.nonNullable E.text)) <>
+      ((\(_,_,_,d,_,_,_) -> d) >$< E.param (E.nonNullable E.text)) <>
+      ((\(_,_,_,_,e,_,_) -> e) >$< E.param (E.nonNullable E.text)) <>
+      ((\(_,_,_,_,_,f,_) -> f) >$< E.param (E.nonNullable E.text)) <>
+      ((\(_,_,_,_,_,_,g) -> g) >$< E.param (E.nonNullable E.text))
 
 -- | Fetch a snippet scoped to a user. Returns Nothing if not owned / missing.
 getSnippetById :: Statement (SnippetId, UserId) (Maybe Snippet)

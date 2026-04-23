@@ -11,6 +11,8 @@ module Handler.Snippets
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Text (Text)
+import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime, UTCTime)
 import qualified Data.UUID as UUID
 import qualified Data.UUID.V4 as UUID
 import qualified Data.Vector as V
@@ -27,6 +29,8 @@ import Api.RequestTypes
   , UpdateSnippetRequest(..)
   )
 import Service.Auth (AuthUser(..))
+import Handler.Auth (requireAuthUser, uniqueViolationConstraint)
+import Service.Identifiers (formatZkuTimestamp)
 import qualified Service.Search as Search
 import qualified Service.Tags as Tags
 import qualified Db.Snippet as Db
@@ -75,23 +79,22 @@ listSnippetsHandler auth mq = do
 createSnippetHandler
   :: AuthResult AuthUser -> CreateSnippetRequest -> AppM SnippetResponse
 createSnippetHandler auth req = do
-  userId <- requireUser auth
+  au     <- requireAuthUser auth
+  let userId   = auUserId au
+      username = auUsername au
   pool   <- asks envDbPool
   _      <- parseMarkupOrFail (csrMarkup req)
   let normTags = Tags.normalize (csrTags req)
   sid <- liftIO $ UUID.toText <$> UUID.nextRandom
-  insRes <- liftIO $ Pool.use pool $ Session.statement
-              (sid, userId, csrTitle req, normTags, csrMarkup req, csrBody req)
-              Db.insertSnippet
-  case insRes of
-    Left _   -> throwError $ appErrorToServantErr (InternalError "database error")
-    Right () -> do
-      -- Re-fetch so we return the DB-populated timestamps.
-      g <- liftIO $ Pool.use pool $
-             Session.statement (sid, userId) Db.getSnippetById
-      case g of
-        Right (Just s) -> pure (toResp s)
-        _ -> throwError $ appErrorToServantErr (InternalError "snippet vanished after insert")
+  now <- liftIO getCurrentTime
+  _   <- tryInsertSnippet pool sid userId
+           (csrTitle req) normTags (csrMarkup req) (csrBody req)
+           (zkuCandidates username now)
+  -- Re-fetch so we return the DB-populated timestamps.
+  g <- liftIO $ Pool.use pool $ Session.statement (sid, userId) Db.getSnippetById
+  case g of
+    Right (Just s) -> pure (toResp s)
+    _              -> throwError $ appErrorToServantErr (InternalError "snippet vanished after insert")
 
 getSnippetHandler
   :: AuthResult AuthUser -> SnippetId -> AppM SnippetResponse
@@ -136,3 +139,31 @@ deleteSnippetHandler auth sid = do
     Left _   -> throwError $ appErrorToServantErr (InternalError "database error")
     Right 0  -> throwError $ appErrorToServantErr NotFound
     Right _  -> pure NoContent
+
+-- | Candidate zku_ids: [base, base<>"-2", base<>"-3", ..., base<>"-100"]
+-- where base = "<username>-<YYYYMMDDHHMMSS>".
+zkuCandidates :: Text -> UTCTime -> [Text]
+zkuCandidates username now =
+  let base = username <> "-" <> formatZkuTimestamp now
+  in base : [base <> "-" <> T.pack (show n) | n <- [(2 :: Int) .. 100]]
+
+-- | Try inserting a snippet with each candidate zku_id. On 23505 against
+-- snippets_zku_id_key, advance. On exhaustion, 500.
+tryInsertSnippet
+  :: Pool.Pool
+  -> SnippetId -> UserId
+  -> Text -> Text -> Text -> Text   -- title, tags, markup, body
+  -> [Text]                          -- candidate zku_ids
+  -> AppM ()
+tryInsertSnippet _ _ _ _ _ _ _ [] =
+  throwError $ appErrorToServantErr (InternalError "could not derive a unique zku_id")
+tryInsertSnippet pool sid uid title tags markup body (candidate:rest) = do
+  result <- liftIO $ Pool.use pool $ Session.statement
+              (sid, uid, candidate, title, tags, markup, body) Db.insertSnippet
+  case result of
+    Right () -> pure ()
+    Left err -> case uniqueViolationConstraint err of
+      Just "snippets_zku_id_key" ->
+        tryInsertSnippet pool sid uid title tags markup body rest
+      _ ->
+        throwError $ appErrorToServantErr (InternalError "database error")
