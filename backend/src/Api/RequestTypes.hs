@@ -40,8 +40,9 @@ instance FromJSON LoginRequest where
   parseJSON = genericParseJSON (stripPrefixOptions 2)
 
 data UserResponse = UserResponse
-  { urId    :: UserId
-  , urEmail :: Text
+  { urId       :: UserId
+  , urEmail    :: Text
+  , urUsername :: Text
   } deriving (Show, Generic)
 instance ToJSON UserResponse where
   toJSON = genericToJSON (stripPrefixOptions 2)
@@ -57,6 +58,7 @@ instance ToJSON AuthResponse where
 data SnippetResponse = SnippetResponse
   { spRespId        :: SnippetId
   , spRespUserId    :: UserId
+  , spRespZkuId     :: Text
   , spRespTitle     :: Text
   , spRespTags      :: Text
   , spRespMarkup    :: Text

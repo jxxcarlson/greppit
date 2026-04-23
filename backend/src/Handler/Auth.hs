@@ -63,7 +63,7 @@ signupHandler req = do
           throwError $ appErrorToServantErr (InternalError "token generation failed")
         Right tokBS -> pure AuthResponse
           { arToken = decodeUtf8 (LBS.toStrict tokBS)
-          , arUser  = UserResponse userId (srEmail req)
+          , arUser  = UserResponse userId (srEmail req) chosen
           }
 
 loginHandler :: LoginRequest -> AppM AuthResponse
@@ -87,13 +87,13 @@ loginHandler req = do
             Left _ -> throwError $ appErrorToServantErr (InternalError "token generation failed")
             Right tokBS -> pure AuthResponse
               { arToken = decodeUtf8 (LBS.toStrict tokBS)
-              , arUser  = UserResponse (usrId user) (usrEmail user)
+              , arUser  = UserResponse (usrId user) (usrEmail user) (usrUsername user)
               }
       | otherwise -> throwError $ appErrorToServantErr Unauthorized
 
 meHandler :: AuthResult AuthUser -> AppM UserResponse
 meHandler (Authenticated au) =
-  pure $ UserResponse (auUserId au) (auEmail au)
+  pure $ UserResponse (auUserId au) (auEmail au) (auUsername au)
 meHandler _ =
   throwError $ appErrorToServantErr Unauthorized
 

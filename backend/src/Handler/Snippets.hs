@@ -47,6 +47,7 @@ toResp :: Snippet -> SnippetResponse
 toResp s = SnippetResponse
   { spRespId        = snpId s
   , spRespUserId    = snpUserId s
+  , spRespZkuId     = snpZkuId s
   , spRespTitle     = snpTitle s
   , spRespTags      = snpTags s
   , spRespMarkup    = markupText (snpMarkup s)

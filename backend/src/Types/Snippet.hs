@@ -22,6 +22,7 @@ markupText PlainText = "plaintext"
 data Snippet = Snippet
   { snpId        :: SnippetId
   , snpUserId    :: UserId
+  , snpZkuId     :: Text
   , snpTitle     :: Text
   , snpTags      :: Text
   , snpMarkup    :: Markup

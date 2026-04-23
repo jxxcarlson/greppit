@@ -20,17 +20,18 @@ import Types.Common (SnippetId, UserId)
 import Types.Snippet (Snippet(..), Markup, parseMarkup)
 
 -- | Decode one snippet row.
--- Columns: id, user_id, title, tags, markup, body, created_at, updated_at
+-- Columns: id, user_id, zku_id, title, tags, markup, body, created_at, updated_at
 snippetRow :: D.Row Snippet
 snippetRow = Snippet
-  <$> D.column (D.nonNullable D.text)
-  <*> D.column (D.nonNullable D.text)
-  <*> D.column (D.nonNullable D.text)
-  <*> D.column (D.nonNullable D.text)
+  <$> D.column (D.nonNullable D.text)        -- id
+  <*> D.column (D.nonNullable D.text)        -- user_id
+  <*> D.column (D.nonNullable D.text)        -- zku_id
+  <*> D.column (D.nonNullable D.text)        -- title
+  <*> D.column (D.nonNullable D.text)        -- tags
   <*> D.column (D.nonNullable (D.refine refineMarkup D.text))
-  <*> D.column (D.nonNullable D.text)
-  <*> D.column (D.nonNullable D.timestamptz)
-  <*> D.column (D.nonNullable D.timestamptz)
+  <*> D.column (D.nonNullable D.text)        -- body
+  <*> D.column (D.nonNullable D.timestamptz) -- created_at
+  <*> D.column (D.nonNullable D.timestamptz) -- updated_at
   where
     refineMarkup :: Text -> Either Text Markup
     refineMarkup t = case parseMarkup t of
@@ -57,7 +58,7 @@ insertSnippet = Statement sql encoder D.noResult True
 getSnippetById :: Statement (SnippetId, UserId) (Maybe Snippet)
 getSnippetById = Statement sql encoder (D.rowMaybe snippetRow) True
   where
-    sql = "SELECT id, user_id, title, tags, markup, body, created_at, updated_at \
+    sql = "SELECT id, user_id, zku_id, title, tags, markup, body, created_at, updated_at \
           \FROM snippets WHERE id = $1 AND user_id = $2"
     encoder =
       (fst >$< E.param (E.nonNullable E.text)) <>
@@ -94,7 +95,7 @@ deleteSnippet = Statement sql encoder (fromIntegral <$> D.rowsAffected) True
 searchSnippets :: Statement (UserId, Vector Text) (Vector Snippet)
 searchSnippets = Statement sql encoder (D.rowVector snippetRow) True
   where
-    sql = "SELECT id, user_id, title, tags, markup, body, created_at, updated_at \
+    sql = "SELECT id, user_id, zku_id, title, tags, markup, body, created_at, updated_at \
           \FROM snippets \
           \WHERE user_id = $1 \
           \  AND (title || ' ' || tags || ' ' || body) ILIKE ALL ($2 :: text[]) \
@@ -110,7 +111,7 @@ searchSnippets = Statement sql encoder (D.rowVector snippetRow) True
 listAllSnippets :: Statement UserId (Vector Snippet)
 listAllSnippets = Statement sql encoder (D.rowVector snippetRow) True
   where
-    sql = "SELECT id, user_id, title, tags, markup, body, created_at, updated_at \
+    sql = "SELECT id, user_id, zku_id, title, tags, markup, body, created_at, updated_at \
           \FROM snippets \
           \WHERE user_id = $1 \
           \ORDER BY updated_at DESC"
