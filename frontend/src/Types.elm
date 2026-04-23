@@ -145,4 +145,5 @@ type Msg
     | ConfirmDelete
     | CancelDelete
     | DeleteResponded String (Result Http.Error ())
+    | ExportPressed
     | SearchDebounceTick Int String

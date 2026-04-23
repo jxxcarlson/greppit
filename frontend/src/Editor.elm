@@ -78,6 +78,12 @@ view st =
             ]
             ++ (if isEdit then
                     [ button
+                        [ class "btn btn-secondary"
+                        , onClick ExportPressed
+                        , disabled st.saving
+                        ]
+                        [ text "Export" ]
+                    , button
                         [ class "btn btn-danger"
                         , onClick DeletePressed
                         , disabled st.saving

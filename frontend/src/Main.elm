@@ -4,6 +4,8 @@ import Api
 import Auth
 import Browser
 import Editor
+import Export
+import File.Download
 import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
@@ -374,6 +376,24 @@ updateSignedIn msg s model =
 
         CancelDelete ->
             mapEditor s model (\e -> { e | showDeleteConfirm = False })
+
+        ExportPressed ->
+            case s.rightMode of
+                EditorMode e ->
+                    case e.editing of
+                        Just snippet ->
+                            ( model
+                            , File.Download.string
+                                (Export.filename snippet)
+                                "text/plain"
+                                (Export.body snippet)
+                            )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
 
         ConfirmDelete ->
             case s.rightMode of
