@@ -788,18 +788,29 @@ scripts/db-dump-do.sh
 cd ~/greppit
 git pull
 
-# 3. Rebuild the binary.
-cd backend && stack build
+# 3. Rebuild AND install the binary to the systemd path.
+#    `stack build` alone updates only .stack-work; the unit file runs
+#    /usr/local/bin/greppit-backend, which is refreshed by `stack install`.
+cd backend && stack install --local-bin-path /usr/local/bin
+ls -la /usr/local/bin/greppit-backend   # timestamp should be fresh
 
-# 4. Restart.
+# 4. Restart. If the unit fails to bind (EADDRINUSE), an orphaned
+#    backend process may hold the port — find and kill it:
+#      ss -tlnp | grep <port>
+#      kill <pid>
+#    Then: systemctl reset-failed greppit-backend before starting.
 systemctl restart greppit-backend
-systemctl status greppit-backend
+systemctl status greppit-backend --no-pager
 
-# 5. Re-login on the web UI (old JWTs lack auUsername and will 401).
+# 5. Re-login on the web UI. Old JWTs lack auUsername and will fail to
+#    decode; the Elm frontend should silently route you to the login
+#    page on any 401. A clean login issues a new-shape token.
 
 # 6. Smoke-test by creating a snippet — should succeed now that the
-#    code mints zku_id. If it fails, something regressed; rollback path:
-#    git revert HEAD && stack build && systemctl restart greppit-backend.
+#    code mints zku_id. Rollback path if anything regresses:
+#    git revert HEAD
+#    stack install --local-bin-path /usr/local/bin
+#    systemctl restart greppit-backend
 ```
 
 No database migration in Phase 2 — dbmate is not involved. The schema from Phase 1 already has the destination columns.

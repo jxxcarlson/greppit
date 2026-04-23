@@ -216,8 +216,14 @@ Open `https://greppit.app/` in a browser and sign up.
 - **Frontend update:** pull on the server, `elm make src/Main.elm
   --optimize --output=elm.js` in `frontend/`. No service restart needed —
   nginx serves the new file on the next request.
-- **Backend update:** pull on the server, `cd backend && stack build`,
+- **Backend update:** pull on the server, then
+  `cd backend && stack install --local-bin-path /usr/local/bin`,
   then `systemctl restart greppit-backend`.
+  Note: `stack build` alone is NOT enough — it only updates the binary
+  inside `.stack-work/`. The systemd unit runs `/usr/local/bin/greppit-backend`,
+  so you must `stack install` to refresh that path. If the service fails
+  to bind the port after restart, check for an orphaned backend process:
+  `ss -tlnp | grep <port>` and `kill` it before trying again.
 - **Backups:** `scripts/db-dump-do.sh` dumps to `~/greppit/backups/`.
   Cron suggestion: `0 3 * * * /root/greppit/scripts/db-dump-do.sh`.
   Pull dumps to your Mac with `scripts/db-fetch-dump.sh` after setting
