@@ -149,6 +149,15 @@ suite =
                     { s | body = "B\n\n\n", tags = "", markup = Markdown }
                         |> Export.body
                         |> Expect.equal "B\n\nmarkup: markdown\n"
+            , test "empty body starts with blank line then trailer" <|
+                \_ ->
+                    let
+                        s =
+                            fixture { zkuId = "x-20260118003017", title = "t" }
+                    in
+                    { s | body = "", tags = "", markup = Markdown }
+                        |> Export.body
+                        |> Expect.equal "\n\nmarkup: markdown\n"
             ]
         , describe "filename"
             [ test "base id + sanitized title" <|
