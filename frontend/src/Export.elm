@@ -1,4 +1,4 @@
-module Export exposing (baseIdOf, filename, sanitizeTitle)
+module Export exposing (baseIdOf, filename, formatTags, sanitizeTitle)
 
 import Char
 import Types exposing (Snippet)
@@ -103,3 +103,16 @@ filename snippet =
 
     else
         base ++ " " ++ sanitized ++ ".txt"
+
+
+{-| Format a space-separated tags string as a single "Tags: #a, #b" line.
+Returns Nothing when there are no tags.
+-}
+formatTags : String -> Maybe String
+formatTags raw =
+    case List.filter (not << String.isEmpty) (String.words raw) of
+        [] ->
+            Nothing
+
+        tokens ->
+            Just ("Tags: " ++ String.join ", " (List.map (\t -> "#" ++ t) tokens))

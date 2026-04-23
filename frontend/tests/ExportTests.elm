@@ -81,6 +81,28 @@ suite =
                         |> String.length
                         |> Expect.equal 120
             ]
+        , describe "formatTags"
+            [ test "empty string returns Nothing" <|
+                \_ ->
+                    Export.formatTags ""
+                        |> Expect.equal Nothing
+            , test "whitespace-only returns Nothing" <|
+                \_ ->
+                    Export.formatTags "   "
+                        |> Expect.equal Nothing
+            , test "single tag" <|
+                \_ ->
+                    Export.formatTags "alpha"
+                        |> Expect.equal (Just "Tags: #alpha")
+            , test "multiple tags joined with comma" <|
+                \_ ->
+                    Export.formatTags "alpha beta"
+                        |> Expect.equal (Just "Tags: #alpha, #beta")
+            , test "ignores extra whitespace between tags" <|
+                \_ ->
+                    Export.formatTags "  alpha   beta  "
+                        |> Expect.equal (Just "Tags: #alpha, #beta")
+            ]
         , describe "filename"
             [ test "base id + sanitized title" <|
                 \_ ->
