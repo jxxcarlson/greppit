@@ -147,3 +147,4 @@ type Msg
     | DeleteResponded String (Result Http.Error ())
     | ExportPressed
     | SearchDebounceTick Int String
+    | NoOp
