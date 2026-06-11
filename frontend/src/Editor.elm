@@ -4,25 +4,33 @@ import CodeMirror
 import Html exposing (Html, button, div, input, label, option, select, text)
 import Html.Attributes exposing (class, disabled, placeholder, selected, type_, value)
 import Html.Events exposing (onClick, onInput)
+import Render
 import Types exposing (EditorState, Markup(..), Msg(..), stringToMarkup)
 
 
 view : EditorState -> Html Msg
 view st =
     let
-        isEdit = st.editing /= Nothing
+        isEdit =
+            st.editing /= Nothing
 
         keyForEditor =
             case st.editing of
-                Just s  -> "edit:" ++ s.id
-                Nothing -> "new"
+                Just s ->
+                    "edit:" ++ s.id
+
+                Nothing ->
+                    "new"
     in
     div [ class "editor-form" ]
-        ([ div [ class "display-title" ]
+        [ div [ class "display-title" ]
             [ text (if isEdit then "Edit snippet" else "New snippet") ]
         , case st.errorMessage of
-            Just m  -> div [ class "auth-error" ] [ text m ]
-            Nothing -> text ""
+            Just m ->
+                div [ class "auth-error" ] [ text m ]
+
+            Nothing ->
+                text ""
         , div [ class "editor-row" ]
             [ label [] [ text "Title" ]
             , input
@@ -47,20 +55,10 @@ view st =
             [ label [] [ text "Markup" ]
             , select
                 [ onInput (\v -> EditorMarkupChanged (Maybe.withDefault Markdown (stringToMarkup v))) ]
-                [ option [ value "markdown",  selected (st.markup == Markdown)  ] [ text "Markdown" ]
+                [ option [ value "markdown", selected (st.markup == Markdown) ] [ text "Markdown" ]
                 , option [ value "plaintext", selected (st.markup == PlainText) ] [ text "Plain text" ]
-                , option [ value "scripta",   selected (st.markup == Scripta)   ] [ text "Scripta" ]
+                , option [ value "scripta", selected (st.markup == Scripta) ] [ text "Scripta" ]
                 ]
-            ]
-        , div [ class "editor-body" ]
-            [ CodeMirror.view
-                { key = keyForEditor
-                , initialValue =
-                    case st.editing of
-                        Just s  -> s.body
-                        Nothing -> ""
-                , onInput = EditorBodyChanged
-                }
             ]
         , div [ class "editor-actions" ]
             ([ button
@@ -69,40 +67,58 @@ view st =
                 , disabled st.saving
                 ]
                 [ text (if st.saving then "Saving..." else "Save") ]
-            , button
+             , button
                 [ class "btn btn-secondary"
                 , onClick CancelEditor
                 , disabled st.saving
                 ]
                 [ text "Cancel" ]
-            ]
-            ++ (if isEdit then
-                    [ button
-                        [ class "btn btn-secondary"
-                        , onClick ExportPressed
-                        , disabled st.saving
+             ]
+                ++ (if isEdit then
+                        [ button
+                            [ class "btn btn-secondary"
+                            , onClick ExportPressed
+                            , disabled st.saving
+                            ]
+                            [ text "Export" ]
+                        , button
+                            [ class "btn btn-danger"
+                            , onClick DeletePressed
+                            , disabled st.saving
+                            ]
+                            [ text "Delete" ]
                         ]
-                        [ text "Export" ]
-                    , button
-                        [ class "btn btn-danger"
-                        , onClick DeletePressed
-                        , disabled st.saving
-                        ]
-                        [ text "Delete" ]
-                    ]
-                else
-                    []
-               )
+
+                    else
+                        []
+                   )
             )
-        ]
-        ++ (if st.showDeleteConfirm then
+        , div [ class "editor-split" ]
+            [ div [ class "editor-source" ]
+                [ CodeMirror.view
+                    { key = keyForEditor
+                    , initialValue =
+                        case st.editing of
+                            Just s ->
+                                s.body
+
+                            Nothing ->
+                                ""
+                    , onInput = EditorBodyChanged
+                    }
+                ]
+            , div [ class "editor-preview" ]
+                [ Render.renderBody st.markup st.previewSource ]
+            ]
+        , if st.showDeleteConfirm then
+            div []
                 [ div [ class "auth-error" ] [ text "Delete this snippet? This cannot be undone." ]
                 , div [ class "editor-actions" ]
                     [ button [ class "btn btn-danger", onClick ConfirmDelete ] [ text "Yes, delete" ]
                     , button [ class "btn btn-secondary", onClick CancelDelete ] [ text "Cancel" ]
                     ]
                 ]
-            else
-                []
-           )
-        )
+
+          else
+            text ""
+        ]
