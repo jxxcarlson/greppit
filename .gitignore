@@ -4,3 +4,6 @@
 
 # Git worktrees for isolated feature work.
 .worktrees/
+
+# Superpowers brainstorming visual companion artifacts
+.superpowers/
