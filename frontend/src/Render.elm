@@ -1,4 +1,4 @@
-module Render exposing (render)
+module Render exposing (render, renderBody)
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
@@ -7,20 +7,27 @@ import Scripta
 import Types exposing (Markup(..), Msg(..), Snippet)
 
 
-{-| Render a snippet's body for the display pane. The return type is `Html Msg`
-because Scripta's rendered output carries interaction events; for this
-read-only view every event is mapped to `NoOp`.
--}
+{-| Render a saved snippet's body for the display pane. -}
 render : Snippet -> Html Msg
 render s =
-    case s.markup of
+    renderBody s.markup s.body
+
+
+{-| Render an arbitrary body string for a given markup type. Used by both the
+display pane and the editor's live preview. The return type is `Html Msg`
+because Scripta's rendered output carries interaction events; for these
+read-only views every event is mapped to `NoOp`.
+-}
+renderBody : Markup -> String -> Html Msg
+renderBody markup body =
+    case markup of
         Markdown ->
-            div [ class "display-body" ] (Markdown.toHtml Nothing s.body)
+            div [ class "display-body" ] (Markdown.toHtml Nothing body)
 
         PlainText ->
             -- Preserve line breaks and whitespace; no markdown parsing.
             -- `.display-body-plain` sets `white-space: pre-wrap`.
-            div [ class "display-body display-body-plain" ] [ text s.body ]
+            div [ class "display-body display-body-plain" ] [ text body ]
 
         Scripta ->
             let
@@ -30,7 +37,7 @@ render s =
                         |> Scripta.withWindowWidth 700
 
                 output =
-                    Scripta.compile options s.body
+                    Scripta.compile options body
                         |> Scripta.mapEvent (\_ -> NoOp)
             in
             div [ class "display-body" ] (output.title :: output.body)
