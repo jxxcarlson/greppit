@@ -333,7 +333,7 @@ updateSignedIn msg s model =
                 | auth =
                     SignedIn
                         { s
-                            | results = snippet :: List.take 4 s.results
+                            | results = snippet :: s.results
                             , selectedId = Just snippet.id
                             , rightMode = DisplayMode (Just snippet)
                         }

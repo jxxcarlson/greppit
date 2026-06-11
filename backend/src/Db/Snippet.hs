@@ -95,7 +95,7 @@ deleteSnippet = Statement sql encoder (fromIntegral <$> D.rowsAffected) True
 
 -- | Search / list. `patterns` is a Vector of ILIKE patterns (each "%term%");
 -- empty vector means "no predicates". Uses Postgres ILIKE ALL over an array.
--- Always returns the 5 most recently updated matches.
+-- Returns all matches, most recently updated first.
 searchSnippets :: Statement (UserId, Vector Text) (Vector Snippet)
 searchSnippets = Statement sql encoder (D.rowVector snippetRow) True
   where
@@ -103,8 +103,7 @@ searchSnippets = Statement sql encoder (D.rowVector snippetRow) True
           \FROM snippets \
           \WHERE user_id = $1 \
           \  AND (title || ' ' || tags || ' ' || body) ILIKE ALL ($2 :: text[]) \
-          \ORDER BY updated_at DESC \
-          \LIMIT 5"
+          \ORDER BY updated_at DESC"
     encoder =
       (fst >$< E.param (E.nonNullable E.text)) <>
       (snd >$< E.param (E.nonNullable
