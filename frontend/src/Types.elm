@@ -111,6 +111,8 @@ type alias EditorState =
     , saving : Bool
     , errorMessage : Maybe String
     , showDeleteConfirm : Bool
+    , previewSource : String
+    , previewTick : Int
     }
 
 
@@ -147,4 +149,5 @@ type Msg
     | DeleteResponded String (Result Http.Error ())
     | ExportPressed
     | SearchDebounceTick Int String
+    | PreviewDebounceTick Int
     | NoOp

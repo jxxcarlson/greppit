@@ -71,6 +71,8 @@ emptyEditor =
     , saving = False
     , errorMessage = Nothing
     , showDeleteConfirm = False
+    , previewSource = ""
+    , previewTick = 0
     }
 
 
@@ -84,6 +86,8 @@ editorFromSnippet s =
     , saving = False
     , errorMessage = Nothing
     , showDeleteConfirm = False
+    , previewSource = s.body
+    , previewTick = 0
     }
 
 
@@ -302,7 +306,35 @@ updateSignedIn msg s model =
             mapEditor s model (\e -> { e | markup = m })
 
         EditorBodyChanged v ->
-            mapEditor s model (\e -> { e | body = v })
+            case s.rightMode of
+                EditorMode e ->
+                    let
+                        nextTick =
+                            e.previewTick + 1
+
+                        newE =
+                            { e | body = v, previewTick = nextTick }
+                    in
+                    ( { model | auth = SignedIn { s | rightMode = EditorMode newE } }
+                    , Task.perform (\_ -> PreviewDebounceTick nextTick) (Process.sleep 200)
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        PreviewDebounceTick n ->
+            case s.rightMode of
+                EditorMode e ->
+                    if n /= e.previewTick then
+                        ( model, Cmd.none )
+
+                    else
+                        ( { model | auth = SignedIn { s | rightMode = EditorMode { e | previewSource = e.body } } }
+                        , Cmd.none
+                        )
+
+                _ ->
+                    ( model, Cmd.none )
 
         SaveSnippet ->
             case s.rightMode of
