@@ -1,8 +1,11 @@
-module Render exposing (render, renderBody)
+module Render exposing (render, renderBody, markdownHeadings)
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
 import Markdown
+import Markdown.Block as Block exposing (Block(..))
+import Markdown.Inline as Inline
+import Markdown.TableOfContents as TOC
 import Scripta
 import Types exposing (Markup(..), Msg(..), Snippet)
 
@@ -41,3 +44,32 @@ renderBody markup body =
                         |> Scripta.mapEvent (\_ -> NoOp)
             in
             div [ class "display-body" ] (output.title :: output.body)
+
+
+{-| The flat list of Markdown headings in document order, each with the slug id
+used both for the rendered heading's `id` attribute and for its TOC link, its
+level, and its plain-text title. Slugging goes through `TOC.headingId` applied to
+`Inline.extractText`, matching how the TOC link target is computed.
+-}
+markdownHeadings : String -> List { id : String, level : Int, title : String }
+markdownHeadings body =
+    headingsFromBlocks (Block.parse Nothing body)
+
+
+headingsFromBlocks : List (Block b i) -> List { id : String, level : Int, title : String }
+headingsFromBlocks blocks =
+    List.concatMap headingOf blocks
+
+
+headingOf : Block b i -> List { id : String, level : Int, title : String }
+headingOf block =
+    case block of
+        Heading _ level inlines ->
+            let
+                t =
+                    Inline.extractText inlines
+            in
+            [ { id = TOC.headingId t, level = level, title = t } ]
+
+        _ ->
+            []
