@@ -26,6 +26,9 @@ port saveToken : String -> Cmd msg
 port removeToken : () -> Cmd msg
 
 
+port scrollToElement : String -> Cmd msg
+
+
 -- MAIN
 
 
@@ -335,6 +338,9 @@ updateSignedIn msg s model =
 
                 _ ->
                     ( model, Cmd.none )
+
+        ScrollToHeading elementId ->
+            ( model, scrollToElement elementId )
 
         SaveSnippet ->
             case s.rightMode of

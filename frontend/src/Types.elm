@@ -150,4 +150,5 @@ type Msg
     | ExportPressed
     | SearchDebounceTick Int String
     | PreviewDebounceTick Int
+    | ScrollToHeading String
     | NoOp
