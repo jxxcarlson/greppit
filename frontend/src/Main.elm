@@ -527,56 +527,71 @@ view model =
             div []
                 [ header (Just { email = s.user.email, count = List.length s.results })
                 , div [ class "app" ]
-                    [ div [ class "col-left" ]
+                    (div [ class "col-left" ]
                         [ Search.view
                             { searchInput = s.searchInput
                             , results = s.results
                             , selectedId = s.selectedId
                             }
                         ]
-                    , viewRight s
-                    ]
+                        :: viewRight s
+                    )
                 ]
 
 
-viewRight : SignedInData -> Html Msg
+viewRight : SignedInData -> List (Html Msg)
 viewRight s =
     case s.rightMode of
         DisplayMode Nothing ->
-            div [ class "col-right" ]
+            [ div [ class "col-right" ]
                 [ div [ class "display-snippet" ]
                     [ text "Select a snippet on the left, or click \"New snippet\" to create one." ]
                 ]
+            ]
 
         DisplayMode (Just snippet) ->
-            div [ class "col-right" ]
-                [ div [ class "display-snippet" ]
-                    [ div [ class "display-header" ]
-                        [ div [ class "display-title" ]
-                            [ text
-                                (if String.isEmpty snippet.title then
-                                    "(untitled)"
-                                 else
-                                    snippet.title
-                                )
+            let
+                rendered =
+                    Render.renderWithToc snippet.markup snippet.body
+
+                displayColumn =
+                    div [ class "col-right" ]
+                        [ div [ class "display-snippet" ]
+                            [ div [ class "display-header" ]
+                                [ div [ class "display-title" ]
+                                    [ text
+                                        (if String.isEmpty snippet.title then
+                                            "(untitled)"
+                                         else
+                                            snippet.title
+                                        )
+                                    ]
+                                , button
+                                    [ class "btn btn-secondary"
+                                    , onClick (EditPressed snippet)
+                                    ]
+                                    [ text "Edit" ]
+                                ]
+                            , if String.isEmpty snippet.tags then
+                                text ""
+                              else
+                                div [ class "display-tags" ] [ text snippet.tags ]
+                            , rendered.body
                             ]
-                        , button
-                            [ class "btn btn-secondary"
-                            , onClick (EditPressed snippet)
-                            ]
-                            [ text "Edit" ]
                         ]
-                    , if String.isEmpty snippet.tags then
-                        text ""
-                      else
-                        div [ class "display-tags" ] [ text snippet.tags ]
-                    , Render.render snippet
-                    ]
+            in
+            if List.isEmpty rendered.toc then
+                [ displayColumn ]
+
+            else
+                [ displayColumn
+                , div [ class "col-toc" ] rendered.toc
                 ]
 
         EditorMode e ->
-            div [ class "col-right" ]
+            [ div [ class "col-right" ]
                 [ Editor.view e ]
+            ]
 
 
 header : Maybe { email : String, count : Int } -> Html Msg

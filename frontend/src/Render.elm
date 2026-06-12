@@ -1,4 +1,4 @@
-module Render exposing (render, renderBody, renderWithToc, markdownHeadings)
+module Render exposing (renderBody, renderWithToc, markdownHeadings)
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class, id)
@@ -8,13 +8,7 @@ import Markdown.Block as Block exposing (Block(..))
 import Markdown.Inline as Inline
 import Markdown.TableOfContents as TOC
 import Scripta
-import Types exposing (Markup(..), Msg(..), Snippet)
-
-
-{-| Render a saved snippet's body for the display pane. -}
-render : Snippet -> Html Msg
-render s =
-    renderBody s.markup s.body
+import Types exposing (Markup(..), Msg(..))
 
 
 {-| Render an arbitrary body string for a given markup type. Used by the editor
