@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-30 — Save before switching snippets
+
+Branch `feat/save-before-switch`.
+
+- **What it does:** if you're editing and click another snippet in the
+  list, or press New snippet, your unsaved changes are saved first. The
+  switch happens once that save succeeds. This also covers a save that
+  was already running when you clicked.
+- **If the save fails:** you stay in the editor, the status line shows
+  the error, and nothing is lost.
+- **Fixed along the way:** pressing New snippet while on a new snippet
+  used to keep the old text in CodeMirror, because both editors had the
+  key `"new"`. Each new-snippet editor now gets its own key.
+- **Code:** `saveBeforeLeaving`, `performNav` and `startAutoSave` in
+  `frontend/src/Main.elm`; `PendingNav` and `editorSeq` in
+  `frontend/src/Types.elm`.
+- **Checked in Chrome** (with temporary snippets, since deleted): new
+  snippet then list click; new snippet then New snippet; edit an existing
+  snippet then list click. Each time the switch happened before
+  auto-save's 2 seconds were up, and the server had the right text with
+  no duplicates. The save-failure path was not exercised.
+
 ## 2026-10-30 — Fix: editor pane empty (CodeMirror failed to load)
 
 Branch `fix/codemirror-esm-lezer`, also cherry-picked onto

@@ -9,6 +9,7 @@ module Types exposing
     , AuthMode(..)
     , AuthForm
     , RightMode(..)
+    , PendingNav(..)
     , EditorState
     , SignedInData
     , Model
@@ -94,12 +95,20 @@ type alias SignedInData =
     , results : List Snippet
     , selectedId : Maybe String
     , rightMode : RightMode
+    , editorSeq : Int
     }
 
 
 type RightMode
     = DisplayMode (Maybe Snippet)
     | EditorMode EditorState
+
+
+{-| Where to go once the editor's pending changes are saved.
+-}
+type PendingNav
+    = GoToSnippet String
+    | GoToNewSnippet
 
 
 type alias EditorState =
@@ -119,6 +128,7 @@ type alias EditorState =
     , autoSaving : Bool
     , autoSaveTick : Int
     , autoSaveError : Maybe String
+    , pendingNav : Maybe PendingNav
     }
 
 

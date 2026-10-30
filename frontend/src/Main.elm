@@ -61,11 +61,12 @@ initSignedIn token user =
     , results = []
     , selectedId = Nothing
     , rightMode = DisplayMode Nothing
+    , editorSeq = 0
     }
 
 
-emptyEditor : EditorState
-emptyEditor =
+emptyEditor : Int -> EditorState
+emptyEditor seq =
     { editing = Nothing
     , title = ""
     , tags = ""
@@ -76,12 +77,13 @@ emptyEditor =
     , showDeleteConfirm = False
     , previewSource = ""
     , previewTick = 0
-    , editorKey = "new"
+    , editorKey = "new:" ++ String.fromInt seq
     , initialBody = ""
     , dirty = False
     , autoSaving = False
     , autoSaveTick = 0
     , autoSaveError = Nothing
+    , pendingNav = Nothing
     }
 
 
@@ -103,6 +105,7 @@ editorFromSnippet s =
     , autoSaving = False
     , autoSaveTick = 0
     , autoSaveError = Nothing
+    , pendingNav = Nothing
     }
 
 
@@ -116,6 +119,80 @@ mapEditor s model f =
 
         _ ->
             ( model, Cmd.none )
+
+
+selectResult : String -> SignedInData -> Model -> ( Model, Cmd Msg )
+selectResult sid s model =
+    let
+        mSnippet =
+            List.filter (\x -> x.id == sid) s.results |> List.head
+    in
+    ( { model
+        | auth =
+            SignedIn
+                { s
+                    | selectedId = Just sid
+                    , rightMode = DisplayMode mSnippet
+                }
+      }
+    , Cmd.none
+    )
+
+
+{-| If the editor has changes that aren't saved yet (or a save is in
+flight), remember where the user wants to go and save first;
+AutoSaveResponded performs the navigation once the save succeeds.
+Nothing means it's safe to leave right away.
+-}
+saveBeforeLeaving : SignedInData -> Model -> PendingNav -> Maybe ( Model, Cmd Msg )
+saveBeforeLeaving s model nav =
+    case s.rightMode of
+        EditorMode e ->
+            if e.autoSaving then
+                -- The in-flight save's response will pick up the navigation.
+                Just ( setEditor s model { e | pendingNav = Just nav }, Cmd.none )
+
+            else if e.dirty && not (isBlankNew e) then
+                Just (startAutoSave s model { e | pendingNav = Just nav })
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
+performNav : PendingNav -> SignedInData -> Model -> ( Model, Cmd Msg )
+performNav nav s model =
+    case nav of
+        GoToSnippet sid ->
+            updateSignedIn (SelectResult sid) s model
+
+        GoToNewSnippet ->
+            updateSignedIn NewSnippetPressed s model
+
+
+setEditor : SignedInData -> Model -> EditorState -> Model
+setEditor s model e =
+    { model | auth = SignedIn { s | rightMode = EditorMode e } }
+
+
+{-| Send the editor's current contents to the server (create or update).
+-}
+startAutoSave : SignedInData -> Model -> EditorState -> ( Model, Cmd Msg )
+startAutoSave s model e =
+    let
+        input =
+            { title = e.title, tags = e.tags, markup = e.markup, body = e.body }
+    in
+    ( setEditor s model { e | autoSaving = True, dirty = False }
+    , case e.editing of
+        Nothing ->
+            Api.createSnippet model.apiBase s.token input AutoSaveResponded
+
+        Just snippet ->
+            Api.updateSnippet model.apiBase s.token snippet.id input AutoSaveResponded
+    )
 
 
 closeEditor : SignedInData -> Model -> ( Model, Cmd Msg )
@@ -338,24 +415,29 @@ updateSignedIn msg s model =
                 ( model, Cmd.none )
 
         SelectResult sid ->
-            let
-                mSnippet = List.filter (\x -> x.id == sid) s.results |> List.head
-            in
-            ( { model
-                | auth =
-                    SignedIn
-                        { s
-                            | selectedId = Just sid
-                            , rightMode = DisplayMode mSnippet
-                        }
-              }
-            , Cmd.none
-            )
+            case saveBeforeLeaving s model (GoToSnippet sid) of
+                Just result ->
+                    result
+
+                Nothing ->
+                    selectResult sid s model
 
         NewSnippetPressed ->
-            ( { model | auth = SignedIn { s | rightMode = EditorMode emptyEditor } }
-            , Cmd.none
-            )
+            case saveBeforeLeaving s model GoToNewSnippet of
+                Just result ->
+                    result
+
+                Nothing ->
+                    ( { model
+                        | auth =
+                            SignedIn
+                                { s
+                                    | rightMode = EditorMode (emptyEditor (s.editorSeq + 1))
+                                    , editorSeq = s.editorSeq + 1
+                                }
+                      }
+                    , Cmd.none
+                    )
 
         EditPressed snippet ->
             ( { model | auth = SignedIn { s | rightMode = EditorMode (editorFromSnippet snippet) } }
@@ -413,21 +495,7 @@ updateSignedIn msg s model =
                         ( model, Cmd.none )
 
                     else
-                        let
-                            input =
-                                { title = e.title, tags = e.tags, markup = e.markup, body = e.body }
-
-                            newS =
-                                { s | rightMode = EditorMode { e | autoSaving = True, dirty = False } }
-                        in
-                        ( { model | auth = SignedIn newS }
-                        , case e.editing of
-                            Nothing ->
-                                Api.createSnippet model.apiBase s.token input AutoSaveResponded
-
-                            Just snippet ->
-                                Api.updateSnippet model.apiBase s.token snippet.id input AutoSaveResponded
-                        )
+                        startAutoSave s model e
 
                 _ ->
                     ( model, Cmd.none )
@@ -450,22 +518,31 @@ updateSignedIn msg s model =
                                 , autoSaveError = Nothing
                                 , autoSaveTick = nextTick
                             }
-                    in
-                    ( { model
-                        | auth =
-                            SignedIn
-                                { s
-                                    | results = newResults
-                                    , selectedId = Just snippet.id
-                                    , rightMode = EditorMode newE
-                                }
-                      }
-                    , if e.dirty then
-                        scheduleAutoSave nextTick
 
-                      else
-                        Cmd.none
-                    )
+                        newS =
+                            { s
+                                | results = newResults
+                                , selectedId = Just snippet.id
+                                , rightMode = EditorMode newE
+                            }
+
+                        newModel =
+                            { model | auth = SignedIn newS }
+                    in
+                    case ( e.pendingNav, e.dirty ) of
+                        ( Just _, True ) ->
+                            -- Edited again while saving: save those edits too
+                            -- before leaving.
+                            startAutoSave newS newModel newE
+
+                        ( Just nav, False ) ->
+                            performNav nav newS newModel
+
+                        ( Nothing, True ) ->
+                            ( newModel, scheduleAutoSave nextTick )
+
+                        ( Nothing, False ) ->
+                            ( newModel, Cmd.none )
 
                 DisplayMode (Just shown) ->
                     -- The editor was closed while the save was in flight.
@@ -490,7 +567,9 @@ updateSignedIn msg s model =
             else
                 mapEditor s
                     model
-                    (\e -> { e | autoSaving = False, dirty = True, autoSaveError = Just (httpError err) })
+                    -- Stay in the editor so the error is visible and the
+                    -- changes aren't lost.
+                    (\e -> { e | autoSaving = False, dirty = True, autoSaveError = Just (httpError err), pendingNav = Nothing })
 
         PreviewDebounceTick n ->
             case s.rightMode of
