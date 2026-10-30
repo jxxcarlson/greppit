@@ -806,8 +806,13 @@ viewRight s =
                             [ div [ class "display-header" ]
                                 [ div [ class "display-title" ]
                                     [ text
-                                        (if String.isEmpty snippet.title then
+                                        (if snippet.markup == Markdown && Render.hasMarkdownTitle snippet.body then
+                                            -- The body's title block shows the title.
+                                            ""
+
+                                         else if String.isEmpty snippet.title then
                                             "(untitled)"
+
                                          else
                                             snippet.title
                                         )

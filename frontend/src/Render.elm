@@ -1,4 +1,4 @@
-module Render exposing (renderBody, renderWithToc)
+module Render exposing (hasMarkdownTitle, renderBody, renderWithToc)
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
@@ -100,3 +100,82 @@ xmarkdownMsgToMsg msg =
 
         _ ->
             NoOp
+
+
+{-| Whether a Markdown body starts with an XMarkdown title block that sets a
+`%title`. The compiler then draws the title itself, so the reader can leave
+out the snippet-title header.
+
+This mirrors the compiler's rule (`AST.TitleBlock`, not exposed by the
+package): the document's first block, after any blank lines, starts with `%`;
+`%key value` lines set fields, and `% ...` (space after `%`) is a comment.
+
+-}
+hasMarkdownTitle : String -> Bool
+hasMarkdownTitle body =
+    let
+        firstBlock =
+            body
+                |> String.lines
+                |> dropWhile (String.trim >> String.isEmpty)
+                |> takeWhile (String.trim >> String.isEmpty >> not)
+                |> List.map String.trim
+    in
+    case firstBlock of
+        first :: _ ->
+            String.startsWith "%" first
+                && List.any (\line -> titleValue line /= Nothing) firstBlock
+
+        [] ->
+            False
+
+
+titleValue : String -> Maybe String
+titleValue line =
+    let
+        rest =
+            String.dropLeft 1 line
+    in
+    if String.startsWith "%" line && not (String.startsWith " " rest) then
+        case String.words rest of
+            "title" :: _ ->
+                case String.trim (String.dropLeft (String.length "title") rest) of
+                    "" ->
+                        Nothing
+
+                    value ->
+                        Just value
+
+            _ ->
+                Nothing
+
+    else
+        Nothing
+
+
+dropWhile : (a -> Bool) -> List a -> List a
+dropWhile pred list =
+    case list of
+        x :: xs ->
+            if pred x then
+                dropWhile pred xs
+
+            else
+                list
+
+        [] ->
+            []
+
+
+takeWhile : (a -> Bool) -> List a -> List a
+takeWhile pred list =
+    case list of
+        x :: xs ->
+            if pred x then
+                x :: takeWhile pred xs
+
+            else
+                []
+
+        [] ->
+            []

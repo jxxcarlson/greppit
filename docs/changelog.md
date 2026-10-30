@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-30 — Markdown from the xmarkdown-compiler package
+
+Branch `feat/xmarkdown-package`.
+
+- **Change:** Markdown is now compiled by
+  [`jxxcarlson/xmarkdown-compiler`](https://package.elm-lang.org/packages/jxxcarlson/xmarkdown-compiler/latest/)
+  instead of the vendored `elm-markdown/`, which is deleted. The reader's
+  table of contents now comes from the compiler. Its `SelectId` events
+  become `ScrollToHeading`. greppit's own heading/TOC code in
+  `src/Render.elm` and its test (`MarkdownTocTests`) are gone.
+- **Math:** XMarkdown passes math as `data-content` / `data-display`
+  attributes, so `<math-text>` in `index.html` now reads those as well as
+  the properties the Scripta compiler sets.
+- **Title blocks:** a Markdown snippet that starts with a title block
+  (`%title`, `%author`, `%date`) gets its title from the compiler, so the
+  reader no longer shows the snippet title above it. Without a `%title`,
+  the header is unchanged. The check is `Render.hasMarkdownTitle`, tested
+  in `tests/MarkdownTitleTests.elm`.
+- **`elm.json`:** added the package and `avh4/elm-color`. `elm/regex`
+  moved to indirect.
+- **Depends on xmarkdown releases:** 2.2.4 (published) makes paragraphs
+  and lists fit panes narrower than 700px. The next release makes a
+  title block count only at the start of a document. `elm.json` still
+  pins 2.2.3, so it needs bumping before merge.
+
 ## 2026-10-30 — Scripta from the published package
 
 Branch `feat/scripta-package`.
