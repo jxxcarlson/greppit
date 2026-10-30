@@ -15,7 +15,7 @@
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
             "jxxcarlson/scripta-compiler-v3": "1.0.1",
-            "jxxcarlson/xmarkdown-compiler": "2.2.3",
+            "jxxcarlson/xmarkdown-compiler": "2.2.5",
             "rtfeldman/elm-iso8601-date-strings": "1.1.4"
         },
         "indirect": {

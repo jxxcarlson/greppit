@@ -20,10 +20,13 @@ Branch `feat/xmarkdown-package`.
   in `tests/MarkdownTitleTests.elm`.
 - **`elm.json`:** added the package and `avh4/elm-color`. `elm/regex`
   moved to indirect.
-- **Depends on xmarkdown releases:** 2.2.4 (published) makes paragraphs
-  and lists fit panes narrower than 700px. The next release makes a
-  title block count only at the start of a document. `elm.json` still
-  pins 2.2.3, so it needs bumping before merge.
+- **Version:** uses xmarkdown 2.2.5. 2.2.4 made paragraphs and lists fit
+  panes narrower than 700px. 2.2.5 made a title block count only at the
+  start of a document.
+- **Checked in Chrome** against the published 2.2.5: the reader and the
+  editor preview fit their panes, TOC clicks scroll, a leading title
+  block replaces the header title, and a `%title` block later in the
+  document renders nothing.
 
 ## 2026-10-30 — Scripta from the published package
 
