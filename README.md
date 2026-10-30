@@ -7,8 +7,9 @@ typing a few words.
 - **Search:** results update as you type (200 ms debounce). Search is
   case-insensitive and matches all the terms you type, against title,
   tags, and body. Results are ordered newest first.
-- **Rendering:** Markdown with KaTeX math, Scripta (via the vendored
-  Scripta v3 compiler), and plain text.
+- **Rendering:** Markdown with KaTeX math, Scripta (via the
+  [`jxxcarlson/scripta-compiler-v3`](https://package.elm-lang.org/packages/jxxcarlson/scripta-compiler-v3/latest/)
+  package), and plain text.
 - **Reader:** a three-column layout with a clickable table of contents
   built from the snippet's headings.
 - **Editor:** a CodeMirror source pane next to a live preview, with

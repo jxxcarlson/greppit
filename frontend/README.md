@@ -69,8 +69,10 @@ or reload, the first result is auto-selected so the right column isn't blank.
 
 - Markdown: vendored `elm-markdown` emits `<math-text>` elements for `$...$`
   and `$$...$$`; KaTeX (loaded from CDN in `index.html`) renders them.
-- Scripta: dropdown option is accepted for data, but renders a placeholder
-  ("Scripta rendering not yet enabled.") in v1.
+- Scripta: compiled by the `jxxcarlson/scripta-compiler-v3` Elm package
+  (`Scripta.compile` in `src/Render.elm`). Math goes through the same
+  `<math-text>` / KaTeX path. To pick up compiler changes, bump the
+  package version in `elm.json`.
 
 ## CodeMirror
 

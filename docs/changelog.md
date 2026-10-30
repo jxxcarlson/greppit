@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-10-30 — Scripta from the published package
+
+Branch `feat/scripta-package`.
+
+- **Change:** Scripta is now compiled by the published
+  [`jxxcarlson/scripta-compiler-v3`](https://package.elm-lang.org/packages/jxxcarlson/scripta-compiler-v3/latest/)
+  package (1.0.1) instead of the copy vendored into `frontend/scripta/`
+  on 2026-06-11, which had fallen behind upstream. The vendored directory
+  is deleted and `scripta` is gone from `source-directories`.
+- **Code:** no source changes. `src/Render.elm` and
+  `tests/ScriptaRenderTests.elm` only use the public `Scripta` API, and
+  the package exposes the same functions.
+- **`elm.json`:** added the package (which brings `jxxcarlson/etex` and
+  `elmcraft/core-extra`). Seven dependencies greppit's own code doesn't
+  import moved from direct to indirect, because the package still needs
+  them: list-extra, maybe-extra, result-extra, maca/elm-rose-tree,
+  elm-syntax-highlight, toastal/either, elm/parser.
+  `zwilias/elm-rosetree` was removed; nothing uses it.
+- **Checked:** the app builds with `--optimize`, and the test modules
+  compile. In Chrome, the existing Scripta snippets render. A sample with
+  sections, a list, and inline and display math rendered in the editor
+  preview: H2/H3 headings, two list items, KaTeX math.
+- **Open question:** the "Test" snippet's first line, `| Test (foo)`,
+  renders as `[Test]`. This wasn't compared against the vendored
+  version.
+
 ## 2026-10-30 — Save before switching snippets
 
 Branch `feat/save-before-switch`.
