@@ -76,6 +76,12 @@ emptyEditor =
     , showDeleteConfirm = False
     , previewSource = ""
     , previewTick = 0
+    , editorKey = "new"
+    , initialBody = ""
+    , dirty = False
+    , autoSaving = False
+    , autoSaveTick = 0
+    , autoSaveError = Nothing
     }
 
 
@@ -91,6 +97,12 @@ editorFromSnippet s =
     , showDeleteConfirm = False
     , previewSource = s.body
     , previewTick = 0
+    , editorKey = "edit:" ++ s.id
+    , initialBody = s.body
+    , dirty = False
+    , autoSaving = False
+    , autoSaveTick = 0
+    , autoSaveError = Nothing
     }
 
 
@@ -104,6 +116,67 @@ mapEditor s model f =
 
         _ ->
             ( model, Cmd.none )
+
+
+closeEditor : SignedInData -> Model -> ( Model, Cmd Msg )
+closeEditor s model =
+    let
+        mSel =
+            s.selectedId
+                |> Maybe.andThen (\sid -> List.filter (\x -> x.id == sid) s.results |> List.head)
+    in
+    ( { model | auth = SignedIn { s | rightMode = DisplayMode mSel } }
+    , Cmd.none
+    )
+
+
+{-| A new snippet with no title or body yet: nothing worth saving.
+-}
+isBlankNew : EditorState -> Bool
+isBlankNew e =
+    e.editing == Nothing && String.isEmpty (String.trim e.title) && String.isEmpty (String.trim e.body)
+
+
+autoSaveDelay : Float
+autoSaveDelay =
+    2000
+
+
+{-| Mark the editor as changed and (re)start the auto-save countdown.
+-}
+editorChanged : SignedInData -> Model -> (EditorState -> EditorState) -> ( Model, Cmd Msg )
+editorChanged s model f =
+    case s.rightMode of
+        EditorMode e ->
+            let
+                nextTick =
+                    e.autoSaveTick + 1
+
+                newE =
+                    f { e | dirty = True, autoSaveTick = nextTick }
+            in
+            ( { model | auth = SignedIn { s | rightMode = EditorMode newE } }
+            , scheduleAutoSave nextTick
+            )
+
+        _ ->
+            ( model, Cmd.none )
+
+
+scheduleAutoSave : Int -> Cmd Msg
+scheduleAutoSave tick =
+    Task.perform (\_ -> AutoSaveTick tick) (Process.sleep autoSaveDelay)
+
+
+{-| Replace a snippet in the results list, or prepend it if it is new.
+-}
+upsertResult : Snippet -> List Snippet -> List Snippet
+upsertResult snippet results =
+    if List.any (\x -> x.id == snippet.id) results then
+        List.map (\x -> if x.id == snippet.id then snippet else x) results
+
+    else
+        snippet :: results
 
 
 updateEditorError : SignedInData -> Model -> Http.Error -> Model
@@ -290,23 +363,26 @@ updateSignedIn msg s model =
             )
 
         CancelEditor ->
-            let
-                mSel =
-                    s.selectedId
-                        |> Maybe.andThen (\sid -> List.filter (\x -> x.id == sid) s.results |> List.head)
-            in
-            ( { model | auth = SignedIn { s | rightMode = DisplayMode mSel } }
-            , Cmd.none
-            )
+            case s.rightMode of
+                EditorMode e ->
+                    if e.dirty && not (isBlankNew e) then
+                        -- Flush changes the auto-save hasn't picked up yet.
+                        updateSignedIn SaveSnippet s model
+
+                    else
+                        closeEditor s model
+
+                _ ->
+                    closeEditor s model
 
         EditorTitleChanged v ->
-            mapEditor s model (\e -> { e | title = v })
+            editorChanged s model (\e -> { e | title = v })
 
         EditorTagsChanged v ->
-            mapEditor s model (\e -> { e | tags = v })
+            editorChanged s model (\e -> { e | tags = v })
 
         EditorMarkupChanged m ->
-            mapEditor s model (\e -> { e | markup = m })
+            editorChanged s model (\e -> { e | markup = m })
 
         EditorBodyChanged v ->
             case s.rightMode of
@@ -315,15 +391,106 @@ updateSignedIn msg s model =
                         nextTick =
                             e.previewTick + 1
 
-                        newE =
-                            { e | body = v, previewTick = nextTick }
+                        ( newModel, autoSaveCmd ) =
+                            editorChanged s model (\e2 -> { e2 | body = v, previewTick = nextTick })
                     in
-                    ( { model | auth = SignedIn { s | rightMode = EditorMode newE } }
-                    , Task.perform (\_ -> PreviewDebounceTick nextTick) (Process.sleep 200)
+                    ( newModel
+                    , Cmd.batch
+                        [ Task.perform (\_ -> PreviewDebounceTick nextTick) (Process.sleep 200)
+                        , autoSaveCmd
+                        ]
                     )
 
                 _ ->
                     ( model, Cmd.none )
+
+        AutoSaveTick n ->
+            case s.rightMode of
+                EditorMode e ->
+                    if n /= e.autoSaveTick || not e.dirty || e.autoSaving || e.saving || isBlankNew e then
+                        -- Stale tick, nothing to save, or a save is already in
+                        -- flight (AutoSaveResponded reschedules if still dirty).
+                        ( model, Cmd.none )
+
+                    else
+                        let
+                            input =
+                                { title = e.title, tags = e.tags, markup = e.markup, body = e.body }
+
+                            newS =
+                                { s | rightMode = EditorMode { e | autoSaving = True, dirty = False } }
+                        in
+                        ( { model | auth = SignedIn newS }
+                        , case e.editing of
+                            Nothing ->
+                                Api.createSnippet model.apiBase s.token input AutoSaveResponded
+
+                            Just snippet ->
+                                Api.updateSnippet model.apiBase s.token snippet.id input AutoSaveResponded
+                        )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        AutoSaveResponded (Ok snippet) ->
+            let
+                newResults =
+                    upsertResult snippet s.results
+            in
+            case s.rightMode of
+                EditorMode e ->
+                    let
+                        nextTick =
+                            e.autoSaveTick + 1
+
+                        newE =
+                            { e
+                                | editing = Just snippet
+                                , autoSaving = False
+                                , autoSaveError = Nothing
+                                , autoSaveTick = nextTick
+                            }
+                    in
+                    ( { model
+                        | auth =
+                            SignedIn
+                                { s
+                                    | results = newResults
+                                    , selectedId = Just snippet.id
+                                    , rightMode = EditorMode newE
+                                }
+                      }
+                    , if e.dirty then
+                        scheduleAutoSave nextTick
+
+                      else
+                        Cmd.none
+                    )
+
+                DisplayMode (Just shown) ->
+                    -- The editor was closed while the save was in flight.
+                    ( { model
+                        | auth =
+                            SignedIn
+                                { s
+                                    | results = newResults
+                                    , rightMode = DisplayMode (Just (if shown.id == snippet.id then snippet else shown))
+                                }
+                      }
+                    , Cmd.none
+                    )
+
+                DisplayMode Nothing ->
+                    ( { model | auth = SignedIn { s | results = newResults } }, Cmd.none )
+
+        AutoSaveResponded (Err err) ->
+            if isAuthError err then
+                forceSignOut model
+
+            else
+                mapEditor s
+                    model
+                    (\e -> { e | autoSaving = False, dirty = True, autoSaveError = Just (httpError err) })
 
         PreviewDebounceTick n ->
             case s.rightMode of

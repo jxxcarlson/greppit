@@ -113,6 +113,12 @@ type alias EditorState =
     , showDeleteConfirm : Bool
     , previewSource : String
     , previewTick : Int
+    , editorKey : String
+    , initialBody : String
+    , dirty : Bool
+    , autoSaving : Bool
+    , autoSaveTick : Int
+    , autoSaveError : Maybe String
     }
 
 
@@ -150,5 +156,7 @@ type Msg
     | ExportPressed
     | SearchDebounceTick Int String
     | PreviewDebounceTick Int
+    | AutoSaveTick Int
+    | AutoSaveResponded (Result Http.Error Snippet)
     | ScrollToHeading String
     | NoOp

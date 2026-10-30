@@ -14,13 +14,14 @@ view st =
         isEdit =
             st.editing /= Nothing
 
+        -- Key and initial body are fixed when the editor opens, so an
+        -- auto-save that creates or updates the snippet doesn't remount or
+        -- reload CodeMirror.
         keyForEditor =
-            case st.editing of
-                Just s ->
-                    "edit:" ++ s.id
+            st.editorKey
 
-                Nothing ->
-                    "new"
+        busy =
+            st.saving || st.autoSaving
     in
     div [ class "editor-form" ]
         [ div [ class "display-title" ]
@@ -64,27 +65,28 @@ view st =
             ([ button
                 [ class "btn btn-primary"
                 , onClick SaveSnippet
-                , disabled st.saving
+                , disabled busy
                 ]
                 [ text (if st.saving then "Saving..." else "Save") ]
              , button
                 [ class "btn btn-secondary"
                 , onClick CancelEditor
-                , disabled st.saving
+                , disabled busy
                 ]
-                [ text "Cancel" ]
+                [ text "Close" ]
+             , div [ class "autosave-status" ] [ text (autoSaveStatus st) ]
              ]
                 ++ (if isEdit then
                         [ button
                             [ class "btn btn-secondary"
                             , onClick ExportPressed
-                            , disabled st.saving
+                            , disabled busy
                             ]
                             [ text "Export" ]
                         , button
                             [ class "btn btn-danger"
                             , onClick DeletePressed
-                            , disabled st.saving
+                            , disabled busy
                             ]
                             [ text "Delete" ]
                         ]
@@ -97,13 +99,7 @@ view st =
             [ div [ class "editor-source" ]
                 [ CodeMirror.view
                     { key = keyForEditor
-                    , initialValue =
-                        case st.editing of
-                            Just s ->
-                                s.body
-
-                            Nothing ->
-                                ""
+                    , initialValue = st.initialBody
                     , onInput = EditorBodyChanged
                     }
                 ]
@@ -122,3 +118,24 @@ view st =
           else
             text ""
         ]
+
+
+autoSaveStatus : EditorState -> String
+autoSaveStatus st =
+    if st.autoSaving then
+        "Saving…"
+
+    else
+        case st.autoSaveError of
+            Just m ->
+                "Auto-save failed: " ++ m
+
+            Nothing ->
+                if st.dirty then
+                    "Unsaved changes"
+
+                else if st.editing /= Nothing then
+                    "Saved"
+
+                else
+                    ""
