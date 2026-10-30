@@ -118,12 +118,14 @@
     <script src="/elm.js"></script>
 
     <script>
-        // KaTeX <math-text> custom element. The v3 Scripta compiler sets the
-        // `content` and `display` DOM *properties* (not attributes), so this
-        // element exposes property setters and recovers properties that Elm
-        // set before the element was upgraded.
+        // KaTeX <math-text> custom element. The Scripta compiler sets the
+        // `content` and `display` DOM *properties*; the XMarkdown compiler sets
+        // `data-content` / `data-display` *attributes*. This element accepts
+        // both, and recovers properties that Elm set before the element was
+        // upgraded.
         function initKatex() {
             class MathText extends HTMLElement {
+                static get observedAttributes() { return ['data-content', 'data-display']; }
                 constructor() {
                     super();
                     this.attachShadow({ mode: "open" });
@@ -133,7 +135,16 @@
                 connectedCallback() {
                     this._upgradeProperty('content');
                     this._upgradeProperty('display');
+                    this._readAttributes();
                     this._render();
+                }
+                attributeChangedCallback() {
+                    this._readAttributes();
+                    if (this.isConnected) this._render();
+                }
+                _readAttributes() {
+                    if (this.hasAttribute('data-content')) this._content = this.getAttribute('data-content');
+                    if (this.hasAttribute('data-display')) this._display = this.getAttribute('data-display') === 'true';
                 }
                 _upgradeProperty(prop) {
                     if (this.hasOwnProperty(prop)) {
