@@ -1,10 +1,10 @@
 # greppit-frontend
 
-Elm 0.19.1 single-page app for greppit.
+Elm 0.19.2 single-page app for greppit.
 
 ## Prerequisites
 
-- `elm` 0.19.1
+- `elm` 0.19.2
 - `elm-test` (for unit tests)
 - Python 3 (for the dev server)
 - Backend running on `http://localhost:8085` (see `../backend/README.md`)

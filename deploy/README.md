@@ -19,9 +19,9 @@ apt install -y build-essential libpq-dev postgresql postgresql-contrib \
 # Stack (GHC)
 curl -sSL https://get.haskellstack.org/ | sh
 
-# Elm 0.19.1 + elm-test
+# Elm 0.19.2 + elm-test
 apt install -y npm
-npm install -g elm@latest-0.19.1 elm-test
+npm install -g elm@latest-0.19.2 elm-test
 
 # dbmate
 curl -fsSL https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64 \

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-30 — Build with Elm 0.19.2
+
+Branch `chore/elm-0.19.2`. The frontend now targets Elm 0.19.2, the
+version installed at `/usr/local/bin/elm`.
+
+- `frontend/elm.json`: `elm-version` changed from 0.19.1 to 0.19.2. No
+  source or dependency changes were needed: all 64 modules build with
+  `--optimize`, and the test modules compile.
+- `README.md`, `frontend/README.md`, `deploy/README.md`: prerequisites
+  now say 0.19.2. The droplet setup installs it with
+  `npm install -g elm@latest-0.19.2`.
+- **On the droplet:** before the next frontend deploy, install 0.19.2
+  there as well, or `elm make` will refuse the new `elm.json`.
+
 ## 2026-10-30 — Editor auto-save
 
 Branch `feat/editor-autosave` (commit `9e4ae1a`). Builds with `--optimize`. Unit tests compile but have not been run, and it has not been tried in the browser yet.
@@ -22,6 +36,6 @@ Branch `feat/editor-autosave` (commit `9e4ae1a`). Builds with `--optimize`. Unit
 
 **Things to know**
 
-- **Compiler version:** `/usr/local/bin/elm` is now 0.19.2, which rejects this project's `elm.json` (0.19.1). So `./scripts/restart.sh` fails at the `elm make` step. Build with `~/.elm/elm-tooling/elm/0.19.1/elm` instead.
-- **Tests not run:** the sandbox blocked elm-test, so the suite hasn't been run. To run it: `cd frontend && elm-test --compiler ~/.elm/elm-tooling/elm/0.19.1/elm`
+- **Compiler version:** `/usr/local/bin/elm` is now 0.19.2, which rejects this project's `elm.json` (0.19.1). So `./scripts/restart.sh` fails at the `elm make` step. Build with `~/.elm/elm-tooling/elm/0.19.1/elm` instead. (Resolved by the Elm 0.19.2 entry above.)
+- **Tests not run:** the sandbox blocked elm-test, so the suite hasn't been run. To run it: `cd frontend && elm-test`
 - **Process:** the usual spec and plan were skipped at the user's request. The work is on its own branch, not merged into `main`.

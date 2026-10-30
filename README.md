@@ -20,7 +20,7 @@ Live at <https://greppit.app>.
 
 | Part | Tech | Where | Dev port |
 |------|------|-------|----------|
-| Frontend | Elm 0.19.1 single-page app, CodeMirror 6 custom element, KaTeX | `frontend/` | 8011 |
+| Frontend | Elm 0.19.2 single-page app, CodeMirror 6 custom element, KaTeX | `frontend/` | 8011 |
 | Backend | Haskell (Servant, Stack / GHC 9.6) JSON API, JWT auth | `backend/` | 8085 |
 | Database | Postgres, migrations with dbmate | `backend/dbmate/migrations/` | — |
 
@@ -43,16 +43,15 @@ More detail:
 - Postgres (running locally)
 - [`stack`](https://haskellstack.org) (pulls GHC 9.6 via `lts-22.43`)
 - [`dbmate`](https://github.com/amacneil/dbmate)
-- Elm **0.19.1**, plus `elm-test` for the frontend tests
+- Elm **0.19.2** (`npm install -g elm@latest-0.19.2`), plus `elm-test`
+  for the frontend tests
 - Python 3 (dev static-file server)
 - `jq` and `curl` (backend integration test)
 
-> **Elm version:** `frontend/elm.json` requires 0.19.1, and Elm 0.19.2
-> refuses to build it. Check with `elm --version`. If the `elm` on your
-> PATH is 0.19.2, put a 0.19.1 binary first on PATH (e.g.
-> `npm install -g elm@latest-0.19.1`, or elm-tooling's
-> `~/.elm/elm-tooling/elm/0.19.1/elm`). `scripts/restart.sh` calls plain
-> `elm`.
+> **Elm version:** `frontend/elm.json` pins 0.19.2, and Elm refuses to
+> build a project pinned to a different version. Check with
+> `elm --version` before building; `scripts/restart.sh` calls whatever
+> `elm` is first on your PATH.
 
 ### One-time setup
 
