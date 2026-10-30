@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-30 — Fix: editor pane empty (CodeMirror failed to load)
+
+Branch `fix/codemirror-esm-lezer`, also cherry-picked onto
+`chore/elm-0.19.2`.
+
+- **Symptom:** you couldn't type in a new snippet, and an existing
+  snippet showed its rendered preview but no source.
+- **Cause:** esm.sh's build of `@codemirror/commands@6.3.3` pulled in its
+  own copy of `@lezer/common@^1.1.0`. esm.sh can't build that copy: it
+  returns a 500 error ("no space left on device"). The failure spread:
+  `commands` failed, then the `codemirror` bundle, then
+  `codemirror-element.js`. So `<codemirror-editor>` was never defined.
+  This was unrelated to auto-save and to Elm 0.19.2.
+- **Fix:** `frontend/index.html` now lists `@lezer/common` as external
+  for `@codemirror/commands`, so it uses the import map's copy (1.2.1),
+  the same as the other CodeMirror packages. Checked in Chrome: the
+  editor loads, existing snippets show their source, and new snippets
+  are editable.
+- **Note:** browsers may keep the old `index.html` cached. Do a hard
+  reload (⇧⌘R) after deploying.
+
 ## 2026-10-30 — Build with Elm 0.19.2
 
 Branch `chore/elm-0.19.2`. The frontend now targets Elm 0.19.2, the
