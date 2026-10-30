@@ -37,7 +37,7 @@ version installed at `/usr/local/bin/elm`.
 
 ## 2026-10-30 — Editor auto-save
 
-Branch `feat/editor-autosave` (commit `9e4ae1a`). Builds with `--optimize`. Unit tests compile but have not been run, and it has not been tried in the browser yet.
+Commit `9e4ae1a`. Merged into `main` 2026-10-30. Tested in the browser locally. Unit tests compile but have not been run.
 
 **What it does**
 
@@ -59,4 +59,4 @@ Branch `feat/editor-autosave` (commit `9e4ae1a`). Builds with `--optimize`. Unit
 
 - **Compiler version:** `/usr/local/bin/elm` is now 0.19.2, which rejects this project's `elm.json` (0.19.1). So `./scripts/restart.sh` fails at the `elm make` step. Build with `~/.elm/elm-tooling/elm/0.19.1/elm` instead. (Resolved by the Elm 0.19.2 entry above.)
 - **Tests not run:** the sandbox blocked elm-test, so the suite hasn't been run. To run it: `cd frontend && elm-test`
-- **Process:** the usual spec and plan were skipped at the user's request. The work is on its own branch, not merged into `main`.
+- **Process:** the usual spec and plan were skipped at the user's request.
