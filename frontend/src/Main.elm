@@ -29,6 +29,9 @@ port removeToken : () -> Cmd msg
 port scrollToElement : String -> Cmd msg
 
 
+port saveLanguage : String -> Cmd msg
+
+
 -- MAIN
 
 
@@ -65,12 +68,12 @@ initSignedIn token user =
     }
 
 
-emptyEditor : Int -> EditorState
-emptyEditor seq =
+emptyEditor : Markup -> Int -> EditorState
+emptyEditor markup seq =
     { editing = Nothing
     , title = ""
     , tags = ""
-    , markup = Markdown
+    , markup = markup
     , body = ""
     , saving = False
     , errorMessage = Nothing
@@ -279,20 +282,22 @@ updateEditorError s model err =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
+    let
+        model =
+            { apiBase = flags.apiBase
+            , auth = SignedOut (emptyAuthForm LoginMode)
+            , currentLanguage =
+                flags.initialLanguage
+                    |> Maybe.andThen stringToMarkup
+                    |> Maybe.withDefault Markdown
+            }
+    in
     case flags.initialToken of
         Just t ->
-            ( { apiBase = flags.apiBase
-              , auth = SignedOut (emptyAuthForm LoginMode)
-              }
-            , Api.me flags.apiBase t (TokenValidated t)
-            )
+            ( model, Api.me flags.apiBase t (TokenValidated t) )
 
         Nothing ->
-            ( { apiBase = flags.apiBase
-              , auth = SignedOut (emptyAuthForm LoginMode)
-              }
-            , Cmd.none
-            )
+            ( model, Cmd.none )
 
 
 
@@ -432,7 +437,7 @@ updateSignedIn msg s model =
                         | auth =
                             SignedIn
                                 { s
-                                    | rightMode = EditorMode (emptyEditor (s.editorSeq + 1))
+                                    | rightMode = EditorMode (emptyEditor model.currentLanguage (s.editorSeq + 1))
                                     , editorSeq = s.editorSeq + 1
                                 }
                       }
@@ -464,7 +469,13 @@ updateSignedIn msg s model =
             editorChanged s model (\e -> { e | tags = v })
 
         EditorMarkupChanged m ->
-            editorChanged s model (\e -> { e | markup = m })
+            let
+                ( newModel, cmd ) =
+                    editorChanged s model (\e -> { e | markup = m })
+            in
+            ( { newModel | currentLanguage = m }
+            , Cmd.batch [ cmd, saveLanguage (markupToString m) ]
+            )
 
         EditorBodyChanged v ->
             case s.rightMode of

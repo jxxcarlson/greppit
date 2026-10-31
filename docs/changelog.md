@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-31 — Remember the last markup language
+
+Branch `feat/remember-language`.
+
+- **What it does:** New snippet starts in the language you last picked
+  in the editor's language menu. The choice survives reloads and
+  signing out. The very first time, it's Markdown (xmarkdown).
+- **Code:**
+  - `Model.currentLanguage` in `frontend/src/Types.elm`.
+  - `emptyEditor` in `frontend/src/Main.elm` now takes the language.
+    `EditorMarkupChanged` updates `currentLanguage` and calls the new
+    `saveLanguage` port.
+  - `frontend/index.html` stores the language in localStorage under
+    `greppit-language` and passes it to Elm as the `initialLanguage`
+    flag. An unknown or missing value falls back to Markdown.
+- **Per browser:** the choice is kept in this browser only, not on the
+  server.
+- **Checked in Chrome:** with nothing stored, New snippet started in
+  Markdown. After switching to Scripta, the next New snippet started in
+  Scripta, and it still did after a reload. The test value was cleared
+  afterwards.
+
 ## 2026-10-30 — Fix: duplicate title for Scripta snippets
 
 Branch `fix/scripta-title-header`.

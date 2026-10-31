@@ -23,6 +23,7 @@ import Time exposing (Posix)
 type alias Flags =
     { apiBase : String
     , initialToken : Maybe String
+    , initialLanguage : Maybe String
     }
 
 
@@ -135,6 +136,10 @@ type alias EditorState =
 type alias Model =
     { apiBase : String
     , auth : AuthState
+
+    -- The markup language for new snippets: the last one the user picked,
+    -- remembered in localStorage. Markdown (xmarkdown) the very first time.
+    , currentLanguage : Markup
     }
 
 

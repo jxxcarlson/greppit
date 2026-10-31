@@ -198,17 +198,22 @@
             : window.location.origin;
 
         var token = localStorage.getItem('greppit-token');
+        var language = localStorage.getItem('greppit-language');
 
         var app = Elm.Main.init({
             node: document.getElementById('app'),
             flags: {
                 apiBase: apiBase,
-                initialToken: token
+                initialToken: token,
+                initialLanguage: language
             }
         });
 
         app.ports.saveToken.subscribe(function(t) {
             localStorage.setItem('greppit-token', t);
+        });
+        app.ports.saveLanguage.subscribe(function(lang) {
+            localStorage.setItem('greppit-language', lang);
         });
         app.ports.removeToken.subscribe(function() {
             localStorage.removeItem('greppit-token');
