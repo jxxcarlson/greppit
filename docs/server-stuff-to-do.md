@@ -4,6 +4,13 @@ Written 2026-10-31.
 
 ## Stop browsers and Cloudflare serving an old build
 
+**Done** 2026-10-31. nginx was changed with `deploy/nginx/add-no-cache.sh`,
+and Cloudflare's Browser Cache TTL is set to "Respect Existing Headers"
+(before that, Cloudflare replaced nginx's header with `max-age=14400`).
+greppit.app now sends `cache-control: no-cache` for `/` and `elm.js`.
+Keep the Cloudflare setting: a fixed TTL would override nginx again.
+The steps below are kept for reference.
+
 Branch `chore/nginx-no-cache` changes the nginx config so browsers and
 Cloudflare check for a new `index.html`, `elm.js` and
 `codemirror-element.js` on every load, instead of reusing a cached copy

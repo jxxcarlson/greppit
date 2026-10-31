@@ -133,21 +133,50 @@ a valid token for any user.
   (`deploy/greppit-backend.service`), and nginx serves files from under
   `/root`.
 
-## Server checks to run
+## Server checks (run 2026-10-31)
 
-These only read settings, and the JWT check prints the secret's length,
-not the secret:
+Run with `ssh root@161.35.125.40 'bash -s' < scripts/server-security-check.sh`.
+It changes nothing and prints only the JWT secret's length.
 
-```bash
-ssh root@161.35.125.40
-s=$(grep ^JWT_SECRET= /root/greppit/.env | cut -d= -f2-); echo "len=${#s}"; [ "$s" = "dev-secret-change-in-production-min-32-chars!!" ] && echo DEFAULT
-stat -c %a /root/greppit/.env            # want 600
-ufw status
-ss -tlnp                                  # postgres should be 127.0.0.1 only
-sshd -T | grep -E "^(passwordauthentication|permitrootlogin) "   # want: no / prohibit-password
-systemctl is-active fail2ban
-apt list --upgradable 2>/dev/null | grep -i security
-```
+- **JWT secret:** 64 characters, not the default. Fine; finding 5's
+  code fix is still worth doing.
+- **`.env` permissions:** 644, readable by every local account. Should
+  be 600: `chmod 600 /root/greppit/.env`.
+- **Database:** postgres listens on 127.0.0.1 only. Fine.
+- **Backend port:** greppit-backend listens on all addresses (8086), but
+  the firewall doesn't open 8086, so it can't be reached from outside.
+  Binding it to 127.0.0.1 would make that not depend on the firewall.
+
+### 7. High: SSH accepts root logins with a password
+
+`sshd -T` shows `permitrootlogin yes` and `passwordauthentication yes`,
+and fail2ban is **inactive** (deploy/README.md says it's set up). Anyone
+on the internet can try root passwords with no limit, and a correct
+guess owns the whole droplet, every app on it included.
+
+- **Fix:** key login already works from this Mac. Once every machine
+  you ssh from has its key in `/root/.ssh/authorized_keys`, set
+  `PasswordAuthentication no` and `PermitRootLogin prohibit-password` in
+  `/etc/ssh/sshd_config`, run `sshd -t`, and `systemctl reload ssh`.
+  Keep the current session open until a new key login works. Then
+  enable fail2ban: `systemctl enable --now fail2ban`.
+
+### 8. Medium: Ubuntu 18.04, past the end of standard support
+
+The droplet runs Ubuntu 18.04.6 LTS, whose standard security updates
+ended in May 2023. `apt` lists no pending security updates because
+none are published for it any more (only through paid Ubuntu Pro/ESM).
+nginx, OpenSSH, OpenSSL and the kernel no longer get fixes.
+
+- **Fix:** enable Ubuntu Pro (free for personal use, up to 5 machines),
+  or move to a new droplet on 24.04. It hosts other apps too (scripta,
+  cloudelog, the pdf server), so this is a larger job.
+
+### Other apps on the droplet
+
+The firewall also opens 3000, 3001, 8080 and 8179 to the internet, and
+the pdf server listens on 3000. Those belong to the other apps, not
+greppit, and weren't reviewed.
 
 ## Suggested order
 
