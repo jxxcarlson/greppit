@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-10-31 — Rate limit on login and signup
+
+Finding 4 in `docs/security-fixes-to-do.md`.
+
+- **Change:** nginx now limits `/api/auth/` (login, signup, me) to 5
+  requests a minute per client, after a burst of 5. Over the limit, the
+  answer is 429 Too Many Requests. Other API routes are not limited.
+- **Client address:** behind Cloudflare, nginx's `$remote_addr` is
+  Cloudflare's, so the limit is keyed on the `CF-Connecting-IP` header.
+  Requests without that header (straight to the droplet) are keyed on
+  the connecting address, so they're limited too.
+- **Files:**
+  - `deploy/nginx/add-auth-ratelimit.sh`: adds the limit to the
+    installed config in place, keeping certbot's HTTPS section. It backs
+    up the config first, and restores the backup if `nginx -t` fails.
+    Run with `ssh root@161.35.125.40 'bash -s' < deploy/nginx/add-auth-ratelimit.sh`.
+    It reads and writes UTF-8 explicitly: the droplet's Python 3.6
+    defaults to ASCII and failed on a "→" in the config's comments.
+  - `deploy/nginx/greppit.app.conf`: the same block, for fresh installs.
+- **Applied** on the droplet 2026-10-31 (backup in `/root/nginx-backups/`).
+  Checked: 12 quick bad logins gave six 401s, then six 429s; `/api/health`
+  and `/api/snippets` answer as before.
+
 ## 2026-10-31 — Fix: math could inject links, styles and images
 
 Branch `fix/katex-trust`. Finding 1 in `docs/security-fixes-to-do.md`.

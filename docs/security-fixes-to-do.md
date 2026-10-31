@@ -85,6 +85,12 @@ token. Its outage earlier is how the CodeMirror editor broke.
 
 `backend/src/Handler/Auth.hs`
 
+**Fixed** on the droplet 2026-10-31 with
+`deploy/nginx/add-auth-ratelimit.sh`: 5 requests a minute per client
+on `/api/auth/`, after a burst of 5; over that, 429. Checked: 12 quick
+bad logins gave six 401s, then six 429s. The same block is in
+`deploy/nginx/greppit.app.conf`.
+
 - **Impact:**
   - Anyone can try passwords as fast as they like.
   - Anyone can create accounts, since signup is open.
