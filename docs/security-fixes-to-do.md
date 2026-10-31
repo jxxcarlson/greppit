@@ -149,6 +149,19 @@ It changes nothing and prints only the JWT secret's length.
 
 ### 7. High: SSH accepts root logins with a password
 
+**Fixed** 2026-10-31 with `deploy/harden-ssh.sh`: root logs in with a
+key only (`permitrootlogin without-password`, `passwordauthentication
+no`). A fresh key login confirmed it, and a password attempt now gets
+"Permission denied (publickey)". The root password still works at
+DigitalOcean's Droplet Console, which is the way back in if this Mac is
+lost (droplet → Access → Droplet Console, log in as `root`). Backup of
+the old config: `/root/sshd_config.2026-10-31-215404-pre-harden`.
+Authorized keys pruned the same day from 9 to 1: only this Mac's
+(`carlson@jxxM3.local`, SHA256:FLVdx44U…). The old list is in
+`/root/authorized_keys.2026-10-31-215627-pre-prune`. To use another
+machine, add its public key through the Droplet Console. Still open:
+fail2ban (not installed; matters little now that passwords are off).
+
 `sshd -T` shows `permitrootlogin yes` and `passwordauthentication yes`,
 and fail2ban is **inactive** (deploy/README.md says it's set up). Anyone
 on the internet can try root passwords with no limit, and a correct
