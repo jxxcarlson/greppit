@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-30 — Fix: duplicate title for Scripta snippets
+
+Branch `fix/scripta-title-header`.
+
+- **Symptom:** a Scripta snippet that starts with a `| title` block showed
+  its title twice in the reader: greppit's header (the snippet's Title
+  field) and then the compiler's title.
+- **Fix:** the source's title wins. The reader header now leaves out the
+  snippet title whenever the body supplies one. The check is
+  `Render.hasSourceTitle`:
+  - Scripta asks the compiler (`Scripta.Document.title`, the text of the
+    `| title` block).
+  - Markdown uses the existing `%title` rule.
+  - Plain text never has a source title.
+- **Tests:** `tests/MarkdownTitleTests.elm` became
+  `tests/SourceTitleTests.elm`, with Scripta and plain-text cases added.
+- **Checked in Chrome** with a temporary Scripta snippet (since deleted):
+  no header title, and "Good Podcasts!" shows once. A Scripta snippet
+  without a title block still shows its header title.
+
 ## 2026-10-30 — Markdown from the xmarkdown-compiler package
 
 Branch `feat/xmarkdown-package`.

@@ -806,7 +806,7 @@ viewRight s =
                             [ div [ class "display-header" ]
                                 [ div [ class "display-title" ]
                                     [ text
-                                        (if snippet.markup == Markdown && Render.hasMarkdownTitle snippet.body then
+                                        (if Render.hasSourceTitle snippet.markup snippet.body then
                                             -- The body's title block shows the title.
                                             ""
 

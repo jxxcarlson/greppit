@@ -1,8 +1,9 @@
-module Render exposing (hasMarkdownTitle, renderBody, renderWithToc)
+module Render exposing (hasMarkdownTitle, hasSourceTitle, renderBody, renderWithToc)
 
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
 import Scripta
+import Scripta.Document
 import Types exposing (Markup(..), Msg(..))
 import XMarkdown.API
 import XMarkdown.Types
@@ -100,6 +101,27 @@ xmarkdownMsgToMsg msg =
 
         _ ->
             NoOp
+
+
+{-| Whether the body supplies its own title, which the compiler draws, so the
+reader can leave out the snippet-title header. Scripta asks the compiler for
+the text of the `| title` block; Markdown uses `hasMarkdownTitle`.
+-}
+hasSourceTitle : Markup -> String -> Bool
+hasSourceTitle markup body =
+    case markup of
+        Markdown ->
+            hasMarkdownTitle body
+
+        Scripta ->
+            Scripta.parse Scripta.defaultOptions body
+                |> Scripta.Document.title
+                |> String.trim
+                |> String.isEmpty
+                |> not
+
+        PlainText ->
+            False
 
 
 {-| Whether a Markdown body starts with an XMarkdown title block that sets a

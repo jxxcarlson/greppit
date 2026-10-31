@@ -1,12 +1,47 @@
-module MarkdownTitleTests exposing (suite)
+module SourceTitleTests exposing (suite)
 
 import Expect
 import Render
 import Test exposing (Test, describe, test)
+import Types exposing (Markup(..))
 
 
 suite : Test
 suite =
+    describe "source titles"
+        [ markdown
+        , sourceTitle
+        ]
+
+
+sourceTitle : Test
+sourceTitle =
+    describe "Render.hasSourceTitle"
+        [ test "Scripta with a title block" <|
+            \_ ->
+                Render.hasSourceTitle Scripta "| title\nGood Podcasts!\n\nSome text."
+                    |> Expect.equal True
+        , test "Scripta without a title block" <|
+            \_ ->
+                Render.hasSourceTitle Scripta "# Podcasts\n\nSome text."
+                    |> Expect.equal False
+        , test "Scripta with an empty title block" <|
+            \_ ->
+                Render.hasSourceTitle Scripta "| title\n\nSome text."
+                    |> Expect.equal False
+        , test "Markdown uses the %title rule" <|
+            \_ ->
+                Render.hasSourceTitle Markdown "%title T\n\nText"
+                    |> Expect.equal True
+        , test "plain text never has a source title" <|
+            \_ ->
+                Render.hasSourceTitle PlainText "%title T\n| title\nX"
+                    |> Expect.equal False
+        ]
+
+
+markdown : Test
+markdown =
     describe "Render.hasMarkdownTitle"
         [ test "a leading title block with %title" <|
             \_ ->
