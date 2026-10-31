@@ -34,6 +34,9 @@ were blocked by auto mode's safety check. The commands to run are in
 
 ### 1. High: math in a snippet can run code
 
+**Fixed** on branch `fix/katex-trust` (see the changelog, 2026-10-31).
+The integrity hashes there also cover KaTeX's part of finding 3.
+
 `frontend/index.html:163-170`
 
 - **Cause:** KaTeX runs with `trust: true`, and its output is written

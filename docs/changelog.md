@@ -1,5 +1,33 @@
 # Changelog
 
+## 2026-10-31 — Fix: math could inject links, styles and images
+
+Branch `fix/katex-trust`. Finding 1 in `docs/security-fixes-to-do.md`.
+
+- **Problem:** `<math-text>` in `frontend/index.html` ran KaTeX with
+  `trust: true` and put its output in with `innerHTML`, outside Elm's
+  protection. Math in a snippet could make a `javascript:` link (which
+  can read the login token), a full-page overlay (`\htmlStyle`), or an
+  image from any server (`\includegraphics`).
+- **Fix:**
+  - `katexTrust` allows only `\href` and `\url`, and only to `http`,
+    `https` or `mailto`. Anything else renders as red source text.
+    Neither compiler sends other trusted commands to KaTeX; Scripta uses
+    `\href` and `\includegraphics` only in its LaTeX export.
+  - KaTeX 0.16.9 → 0.16.47, the newest 0.16 release, which includes the
+    fixes for the 0.16.9 advisories. 0.19 was not taken, to avoid
+    rendering changes.
+  - The KaTeX CSS, JS and mhchem files carry `integrity` hashes, so a
+    changed file on jsdelivr is refused. A version bump needs new hashes.
+  - A KaTeX error message is shown with `textContent`, not `innerHTML`.
+- **Checked in Chrome:**
+  - KaTeX 0.16.47 loads with no integrity or console errors.
+  - `javascript:` links (any letter case), `\htmlStyle` and
+    `\includegraphics` are refused; an `https` link works.
+  - HTML in the math source is not injected.
+  - In a temporary Markdown snippet (since deleted), a fraction, `\ce{H2O}`
+    and a display integral render, and so does the Scripta property path.
+
 ## 2026-10-31 — Remember the last markup language
 
 Branch `feat/remember-language`.
