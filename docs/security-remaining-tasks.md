@@ -89,8 +89,10 @@ or broken build there runs in the page that holds the login token.
   server, and they're stored in localStorage.
 - **Cloudflare bypass:** `https://161.35.125.40/` answers directly,
   skipping Cloudflare. Limit ports 80 and 443 to Cloudflare's IP ranges.
-- **Root:** the backend runs as root, and nginx serves files from under
-  `/root`.
+- ~~**Root:** the backend runs as root.~~ Done 2026-11-01: greppit,
+  cloudelog and scripta run as their own unprivileged users in a systemd
+  sandbox (`deploy/run-backends-unprivileged.sh`). nginx still serves the
+  frontends from under `/root` (711).
 - **Backend port:** the backend listens on all addresses (8086). The
   firewall blocks it, but binding it to 127.0.0.1 wouldn't depend on the
   firewall.

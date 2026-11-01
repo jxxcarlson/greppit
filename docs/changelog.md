@@ -1,5 +1,58 @@
 # Changelog
 
+## 2026-11-01 — greppit, cloudelog and scripta no longer run as root
+
+Their backends on rose2 ran as root, so a bug in any one could have
+given an attacker the whole server and every app's secrets. They now run
+like pdfServer.
+
+- **Unprivileged users:** each has its own system user (`greppit`,
+  `cloudelog`, `scripta`), which can't log in and has no home folder.
+- **systemd sandbox:**
+  - `ProtectSystem=strict`, `ProtectHome=read-only`, `NoNewPrivileges`;
+  - `PrivateTmp`, `PrivateDevices`, no capabilities, and only IPv4, IPv6
+    and local sockets.
+  - The backends write no files, read no `.env` of their own and run no
+    other programs, so they get no write access at all. systemd still
+    reads each `.env` (root-only, 600) before dropping privileges.
+- **scripta's database login.** It logs in to Postgres over the local
+  socket with no password, as the system user it runs as.
+  - Its objects moved from role `root` to a new role `scripta`
+    (`REASSIGN OWNED`).
+  - A `pg_ident.conf` map lets both the system users `scripta` (the app)
+    and `root` (the nightly dump, `migrate.sh`) log in as `scripta`.
+    `pg_hba.conf` has `local scripta_v4 scripta peer map=scripta`.
+  - Its `.env` says
+    `DATABASE_URL=postgresql:///scripta_v4?host=/var/run/postgresql&user=scripta`.
+- **Script:** `deploy/run-backends-unprivileged.sh` does all three,
+  backing up first and rolling an app back if its checks fail. Backups
+  are in `/root/migration-backups/unprivileged-*`. The repo's
+  `deploy/greppit-backend.service` matches.
+
+**Two bugs in the script, both caught and fixed:**
+
+1. The first run rolled scripta back. A check compared query output that
+   included perl locale warnings from psql's wrapper. The script now sets
+   `LC_ALL=C.UTF-8`.
+2. The second run switched scripta, but sign-in then failed with 500.
+   `sed` had written the new `DATABASE_URL`, and the `&` in it means
+   "the matched text" in a sed replacement, so the line was garbled.
+   - Fixed by rewriting the line in Python and restarting scripta.
+   - The script now writes `.env` without sed and checks the line.
+
+**Checked:**
+
+- all sites answer, and scripta's websocket opens;
+- scripta reads its 329 documents in the sandbox, and `pg_dump` as root
+  still works for the nightly backup;
+- James signed in to x-scripta.app, greppit.app and cloudelog.app and
+  tested each: all OK;
+- Postgres shows sessions from roles `scripta`, `greppit` and
+  `cloudelog`, and there have been no 5xx errors since the `.env` fix.
+
+All four backends now run unprivileged: `greppit`, `cloudelog`,
+`scripta`, `pdfserver`.
+
 ## 2026-11-01 — pdfServer: one compile at a time; save/ kept 7 days
 
 pdfServer2 `ff046b8` (and `f8eba38` for the test), deployed on rose2.

@@ -11,8 +11,13 @@ StartLimitBurst=3
 [Service]
 Type=simple
 
-# Adjust User / paths if you don't run as root.
-User=root
+# Unprivileged system user (useradd --system --no-create-home --shell
+# /usr/sbin/nologin greppit). systemd reads EnvironmentFile as root before
+# dropping to it, so .env stays root-only (600). The backend writes no
+# files, so the sandbox below allows no writes at all. Set up on rose2 by
+# deploy/run-backends-unprivileged.sh (2026-11-01).
+User=greppit
+Group=greppit
 WorkingDirectory=/root/greppit/backend
 
 # DATABASE_URL, JWT_SECRET, JWT_EXPIRY_DAYS, GREPPIT_BACKEND_PORT, etc.
@@ -33,9 +38,18 @@ Restart=on-failure
 RestartSec=3
 
 # Lock down the service a little.
-NoNewPrivileges=true
-ProtectSystem=full
-PrivateTmp=true
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
 
 [Install]
 WantedBy=multi-user.target
