@@ -62,7 +62,7 @@ bash test-api.sh           # in another
 | Var | Default | Notes |
 |-----|---------|-------|
 | `DATABASE_URL` | `postgres://localhost/greppit_dev` | libpq connection string (URL or keyword format) |
-| `JWT_SECRET` | `dev-secret-change-in-production-min-32-chars!!` | HS256-signed; must be ≥ 32 bytes in production |
+| `JWT_SECRET` | none: required | HS256-signed; ≥ 32 bytes (`openssl rand -base64 48`). The backend refuses to start without one, or with the old published default |
 | `JWT_EXPIRY_DAYS` | `7` | token lifetime |
 | `PORT` | `8085` |  |
 

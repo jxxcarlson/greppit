@@ -65,10 +65,13 @@ createdb greppit_dev
 It defaults to `postgres://localhost/greppit_dev` and adds
 `sslmode=disable` for local connections.
 
-Optionally, create a `.env` in the repo root (it's git-ignored) for
-settings specific to your machine:
+Create a `.env` in the repo root (it's git-ignored) for settings
+specific to your machine. `JWT_SECRET` is required: the backend refuses
+to start without one (32 bytes or more; generate it with
+`openssl rand -base64 48`). The rest are optional:
 
 ```sh
+JWT_SECRET=<output of: openssl rand -base64 48>
 DATABASE_URL=postgres://localhost/greppit_dev
 GREPPIT_BACKEND_PORT=8085
 GREPPIT_FRONTEND_PORT=8011
