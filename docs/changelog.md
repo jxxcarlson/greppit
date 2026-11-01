@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-01 — pdfServer: one compile at a time; save/ kept 7 days
+
+pdfServer2 `ff046b8` (and `f8eba38` for the test), deployed on rose2.
+
+- **Simultaneous exports broke each other.** Every LaTeX job shares
+  `inbox/`, `image/` and `outbox/`, and each ends with
+  `rm -f inbox/*.tex image/*`. With 6 exports sent at once to the live
+  server, 3 came back with errors and without their own text.
+  - Now `/pdf`, `/json`, `/tex` and `/tar` do their file work under one
+    lock, so 6/6 come back correct.
+  - `/tikz2png` has its own temporary folder and isn't locked.
+  - `/pdf` gets a few requests a day, so waiting is rare.
+- **`save/` kept every exported document forever.** Copies are now kept
+  7 days, deleted alongside `outbox/`'s 1-day cleanup. The first export
+  after the deploy cut it from 162 files to 2.
+- **`/tex`** now reads its LaTeX fully before the compile deletes it.
+- **Tests,** in pdfServer2 `deploy/`:
+  - `concurrency-test.py` (6/6);
+  - `security-test.py` (26/26 on the live server). Its image check now
+    bypasses the PDF cache and confirms the image is in the PDF.
+
 ## 2026-11-01 — pdfServer security fixes, and a log review of rose
 
 pdfServer (pdfserv.app) compiles LaTeX and renders TikZ for anyone on

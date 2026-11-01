@@ -110,13 +110,14 @@ with security first, then suggested improvements:
 - **PDFs are public by name:** generated PDFs in `outbox/` can be fetched
   by anyone who knows or guesses the name. Random names or short-lived
   links would fix it.
-- **`save/` keeps a copy of every document anyone exports, forever** (162
-  so far). Consider expiring it like `outbox/` (one day), or not keeping
-  it at all.
-- **Simultaneous requests clobber each other.** All requests share
-  `inbox/`, `outbox/` and `image/`, and every compile ends with
-  `rm -f inbox/*.tex image/*`. A temporary folder per request would fix
-  this and make cleanup safe.
+- ~~**`save/` keeps a copy of every document anyone exports, forever.**~~
+  Done 2026-11-01 (pdfServer2 `ff046b8`): copies are kept 7 days, which
+  cut `save/` from 162 files to 2.
+- ~~**Simultaneous requests clobber each other.**~~ Done 2026-11-01
+  (pdfServer2 `ff046b8`): one LaTeX job runs at a time, under an MVar
+  lock. A folder per request was the alternative, but paths, and
+  scripta's own `\graphicspath`, are hard-wired to the shared folders.
+  6 simultaneous exports went from 3/6 correct to 6/6.
 - **Image URLs get mangled** when one image's name appears inside another
   URL. URLs are swapped for file names by plain text substitution, which
   shows in the logs as `…/image-1.jpgd7b724d-image-1.jpg…`.
