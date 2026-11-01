@@ -3,7 +3,7 @@
 # to the installed nginx config on the droplet, in place, keeping
 # certbot's HTTPS section. Run from your Mac at the repo root:
 #
-#   ssh root@161.35.125.40 'bash -s' < deploy/nginx/add-auth-ratelimit.sh
+#   ssh root@147.182.143.224 'bash -s' < deploy/nginx/add-auth-ratelimit.sh
 #
 # Backs up the config to /root/nginx-backups/ first. If `nginx -t` fails,
 # the backup is restored and nginx is not reloaded. Running it twice is

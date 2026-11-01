@@ -3,7 +3,7 @@
 # droplet, in place, keeping certbot's HTTPS section. Also gives /app.js
 # the same no-cache rule as elm.js. Run from your Mac at the repo root:
 #
-#   ssh root@161.35.125.40 'bash -s' < deploy/nginx/add-security-headers.sh
+#   ssh root@147.182.143.224 'bash -s' < deploy/nginx/add-security-headers.sh
 #
 # Writes /etc/nginx/snippets/greppit-security-headers.conf (same content
 # as deploy/nginx/greppit-security-headers.conf) and includes it in the

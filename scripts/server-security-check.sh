@@ -4,7 +4,7 @@
 # and never prints the JWT secret, only its length. Run from your Mac at
 # the repo root:
 #
-#   ssh root@161.35.125.40 'bash -s' < scripts/server-security-check.sh
+#   ssh root@147.182.143.224 'bash -s' < scripts/server-security-check.sh
 
 echo "== JWT secret (want: 32+ characters, not DEFAULT)"
 s=$(grep '^JWT_SECRET=' /root/greppit/.env | cut -d= -f2-)

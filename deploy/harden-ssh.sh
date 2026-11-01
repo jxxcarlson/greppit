@@ -13,6 +13,12 @@
 #
 # Existing SSH sessions are not cut off by the reload. The DigitalOcean
 # web console still works if everything else fails.
+# rose2 (Ubuntu 24.04, production since 2026-11-01) does NOT need this
+# script: there the same settings live in
+# /etc/ssh/sshd_config.d/00-hardening.conf, set up during the migration.
+# On 24.04 the drop-in directory is read first, so this script's edits to
+# the main sshd_config would not take effect anyway. Kept as a record of
+# what was done on rose (161.35.125.40, Ubuntu 18.04).
 set -euo pipefail
 
 C=/etc/ssh/sshd_config

@@ -4,7 +4,7 @@
 # installed nginx config on the droplet, keeping certbot's HTTPS section.
 # Run from your Mac at the repo root:
 #
-#   ssh root@161.35.125.40 'bash -s' < deploy/nginx/add-no-cache.sh
+#   ssh root@147.182.143.224 'bash -s' < deploy/nginx/add-no-cache.sh
 #
 # Then purge Cloudflare once (dashboard: Caching → Configuration → Purge
 # Everything) so the copies cached under the old rules go away.
