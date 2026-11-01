@@ -12,6 +12,9 @@ Already done on 2026-10-31:
 
 ## 1. `.env` readable by every account on the droplet
 
+**Done** 2026-10-31: `chmod 600 /root/greppit/.env`, run by hand on the
+droplet.
+
 `/root/greppit/.env` holds `JWT_SECRET` and the database URL, and its
 permissions are 644.
 
@@ -20,6 +23,8 @@ permissions are 644.
   still read the file.
 
 ## 2. No security headers (finding 2, medium)
+
+**Done** 2026-10-31/11-01; see `docs/changelog.md`.
 
 greppit.app sends no `Content-Security-Policy`,
 `Strict-Transport-Security`, `X-Frame-Options` / `frame-ancestors`, or
@@ -35,6 +40,8 @@ greppit.app sends no `Content-Security-Policy`,
 
 ## 3. JWT secret falls back to a public default (finding 5, medium)
 
+**Done** 2026-10-31/11-01; see `docs/changelog.md`.
+
 `backend/src/Config.hs:27`: if `JWT_SECRET` is ever missing from `.env`,
 the backend starts with the default secret, which is published in the
 repo. Anyone could then create a valid login token for any user. The
@@ -44,6 +51,11 @@ droplet's secret is fine today (64 characters, not the default).
   default, or is shorter than 32 bytes.
 
 ## 4. Ubuntu 18.04, past the end of standard support (finding 8, medium)
+
+**Done for now** 2026-11-01: Ubuntu Pro attached, so security updates
+run until 2028, and all packages and the kernel are updated (see
+`docs/changelog.md`). The long-term fix, a new 24.04 droplet, is still
+open.
 
 Its free security updates ended in May 2023, so nginx, OpenSSH, OpenSSL
 and the kernel no longer get fixes.

@@ -1,5 +1,51 @@
 # Changelog
 
+## 2026-11-01 — Droplet security updates (Ubuntu Pro)
+
+Item 4 in `docs/security-remaining-tasks.md` (finding 8). Done on the
+droplet (rose, 161.35.125.40); there are no code changes.
+
+- **Problem:** rose runs Ubuntu 18.04.6, whose free security updates ended
+  in May 2023. Its kernel, OpenSSH, OpenSSL, nginx and Postgres were no
+  longer getting fixes. The server had been up 186 days on kernel
+  `4.15.0-213`.
+- **Fix:** attached a free personal Ubuntu Pro subscription
+  (`pro attach`, token from ubuntu.com/pro/dashboard). That turns on
+  `esm-infra` and `esm-apps`, which bring security updates for 18.04
+  until 2028. Livepatch is enabled too: it applies many kernel fixes
+  without a reboot.
+- **Steps:**
+  1. Took a DigitalOcean snapshot, `rose-1793510599494`. Delete it after a
+     few days if all is well; snapshots are billed.
+  2. Ran `apt-get upgrade` in a `screen` session. It updated 267
+     packages, 263 of them security fixes: OpenSSL, OpenSSH, nginx,
+     Postgres 10 and others. It ran with `--force-confold`, so every
+     existing config file was kept (nginx, sshd, Postgres).
+  3. Rebooted.
+  4. Ran `apt-get dist-upgrade` for the 11 packages `upgrade` holds back,
+     including the new kernel, then rebooted again.
+- **Result:**
+  - The droplet runs kernel `4.15.0-261`, with nothing left to install.
+  - Every service is `active`: ssh, nginx, postgresql@10-main,
+    greppit-backend, scripta-backend, cloudelog-backend and pdfServer.
+    They're all boot-enabled systemd services, which was checked before
+    rebooting.
+  - greppit.app, x-scripta.app and cloudelog.app answer normally.
+  - SSH is still key-only, and the nginx security headers are still in
+    place.
+- **Still to know:**
+  - The "post-quantum key exchange" SSH warning remains: OpenSSH 7.6
+    can't do it. It goes away only on Ubuntu 22.04 or later.
+  - `apt-get update` reports a 404 for `apt.postgresql.org … bionic-pgdg`:
+    PostgreSQL's own repository dropped 18.04. Postgres 10 comes from
+    Ubuntu, with updates through Pro, so this is harmless. Disable it by
+    renaming `/etc/apt/sources.list.d/pgdg.list` to `pgdg.list.disabled`.
+  - The long-term fix is still a new Ubuntu 24.04 droplet, moving the
+    apps across one at a time and switching each domain's DNS in
+    Cloudflare.
+- **Unrelated:** scripta.io returned Cloudflare's 522 (can't reach the
+  origin). It's a Lamdera app, not hosted on this droplet.
+
 ## 2026-10-31 — Security headers and a required JWT secret
 
 Items 2 and 3 in `docs/security-remaining-tasks.md` (findings 2 and 5 in
@@ -66,6 +112,29 @@ Items 2 and 3 in `docs/security-remaining-tasks.md` (findings 2 and 5 in
   - The nginx edit was dry-run on a copy of the installed config.
 - **Note:** the local backend stopped during testing, possibly because
   of a cleanup command. It was restarted with the new local secret.
+
+### Deployed 2026-11-01 (UTC)
+
+- **Frontend:** pulled and rebuilt on the droplet.
+- **Headers:** `deploy/nginx/add-security-headers.sh` was run on the
+  droplet (backup in `/root/nginx-backups/`). All five headers are on
+  `/`, `/elm.js`, `/app.js` and `/api/`.
+- **Backend:** `stack install` succeeded, but the service then failed
+  with "Address already in use". Port 8086 was held by a backend started
+  by hand on **2026-06-11** from `.stack-work` (an old SSH session's
+  process, not the systemd service). So production had been running
+  that June build all along, and earlier backend deploys hadn't taken
+  effect. The fix: that process was stopped, and `greppit-backend` was
+  started under systemd, running `/usr/local/bin/greppit-backend`.
+  - The only backend commit since June is the JWT check above, and
+    production's database already has migrations 001–003, so the new
+    binary matches it.
+  - After a backend deploy, check that `systemctl is-active
+    greppit-backend` says `active`. `/api/health` answering isn't
+    enough: a stray process can answer it.
+- **Checked on greppit.app in Chrome:** still signed in (same secret),
+  96 snippets listed, KaTeX math and CodeMirror work, a `javascript:`
+  link is blocked, and there are no policy errors in the console.
 
 ## 2026-10-31 — Rate limit on login and signup
 
