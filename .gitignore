@@ -1,6 +1,7 @@
 # Per-user / per-machine config that should not be shared.
 .claude/
 .env
+.idea/
 
 # Git worktrees for isolated feature work.
 .worktrees/
