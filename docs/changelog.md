@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-11-01 — pdfServer: image URLs no longer rewrite the document
+
+pdfServer2 `b34570b`, deployed; `/hello` reports `b34570b`.
+
+- **Symptom:** image URLs in the logs like
+  `…/image-1.jpgd7b724d-image-1.jpgf85-46image-1.jpg…`, and the images
+  failed to load.
+- **Cause:** every `1` had become `image-1.jpg`. One export of
+  `entropy.tex` came from scripta-app-v3 (scripta.io) with an image entry
+  whose "URL" was `1`, from an image block whose `src` was `1`.
+  - The image URL is swapped for its file name by plain text replacement
+    over the whole document, so every `1` in the text, the math and the
+    other URLs changed.
+  - scripta-app-v3 does this itself before sending
+    (`ImageDict.substituteFilenameForUrls`), and pdfServer did it again
+    for `urlList` entries (`Document.replaceImageUrls`).
+- **Fix in pdfServer:** `Document.replaceUrlArguments` replaces a URL
+  only where it fills a whole `{argument}` (`\includegraphics[..]{URL}`
+  or a macro's `{URL}`), and only `http(s)` URLs.
+  - URLs taken from `\includegraphics{…}` are trimmed, since exports
+    sometimes leave spaces in the braces.
+  - That also repairs a regression from `7cf920e`, which had begun
+    refusing such URLs.
+- **Fix in scripta-app-v3:** `src/Frontend/PDF.elm` now keeps only
+  `http(s)` image sources for the export. It compiles with `lamdera
+  make`, but is uncommitted: the repo has other work in progress. James
+  will deploy it with Lamdera. Until then, scripta.io documents with an
+  odd image `src` can still arrive already mangled.
+- **Tests:** 3 new checks in `deploy/security-test.py`, 29 in all.
+  - The previous live build failed 2 of them; the fix passes all 29,
+    live.
+  - 25 real saved documents gave the same results before and after.
+
 ## 2026-11-01 — greppit, cloudelog and scripta no longer run as root
 
 Their backends on rose2 ran as root, so a bug in any one could have

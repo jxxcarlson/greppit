@@ -120,8 +120,8 @@ with security first, then suggested improvements:
   lock. A folder per request was the alternative, but paths, and
   scripta's own `\graphicspath`, are hard-wired to the shared folders.
   6 simultaneous exports went from 3/6 correct to 6/6.
-- **Image URLs get mangled** when one image's name appears inside another
-  URL. URLs are swapped for file names by plain text substitution, which
+- ~~**Image URLs get mangled.**~~ Done 2026-11-01 (pdfServer2 `b34570b`).
+  The cause was an image entry whose "URL" was `1`. URLs are swapped for file names by plain text substitution, which
   shows in the logs as `…/image-1.jpgd7b724d-image-1.jpg…`.
 - **Very chatty log:** `logStdoutDev` logs every request with its
   parameters (172,000 lines in two months). `logStdout`, or no request

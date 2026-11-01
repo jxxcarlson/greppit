@@ -21,7 +21,10 @@ notes in `docs/changelog.md`.
    unprivileged users (`greppit`, `cloudelog`, `scripta`, `pdfserver`)
    in a systemd sandbox, set up by `deploy/run-backends-unprivileged.sh`.
    James tested all three apps; see `docs/changelog.md`.
-2. **Fix pdfServer's image-URL mangling.** In documents with several
+2. ~~**Fix pdfServer's image-URL mangling.**~~ **Done 2026-11-01** in
+   pdfServer (`b34570b`, deployed). The matching fix in scripta-app-v3
+   (`src/Frontend/PDF.elm`) is local, not committed, for James to deploy
+   with Lamdera. In documents with several
    images, one image's name gets substituted inside the other URLs (it
    shows in the logs as `…/image-1.jpgd7b724d-image-1.jpg…`), so those
    downloads fail. Users can actually hit this.
@@ -30,7 +33,7 @@ notes in `docs/changelog.md`.
    backup of the whole server. A nightly copy to the Mac or to cloud
    storage would close that gap.
 
-Next: (2), then (3).
+Next: (3).
 
 ## Smaller items, any time
 
