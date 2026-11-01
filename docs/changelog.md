@@ -30,7 +30,7 @@ and nginx for two weeks.
   - nothing in temp folders, no unusual processes, no suspicious shell
     history;
   - the October 25 changes (nmap snap, BBR tuning, scripta's nginx site)
-    look like a deliberate work session; James to confirm.
+    were James's own work, confirmed 2026-11-01.
 - **Can't be verified:** `/tikz2png` input isn't kept anywhere, and older
   logs are gone.
 
