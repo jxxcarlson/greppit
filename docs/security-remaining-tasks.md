@@ -98,6 +98,37 @@ or broken build there runs in the page that holds the login token.
   It matters little now that SSH passwords are off. Either install it or
   correct the README.
 
+## pdfServer (pdfserv.app)
+
+**Security flaws fixed** 2026-11-01; see `docs/changelog.md`. Still open,
+with security first, then suggested improvements:
+
+- **Cloudflare Images abuse:** `/image` and `/tikz2png` upload to James's
+  Cloudflare Images account for anyone. The rate limit slows this. A real
+  fix would be a check on the caller, for example the `Origin` of
+  scripta's sites.
+- **PDFs are public by name:** generated PDFs in `outbox/` can be fetched
+  by anyone who knows or guesses the name. Random names or short-lived
+  links would fix it.
+- **`save/` keeps a copy of every document anyone exports, forever** (162
+  so far). Consider expiring it like `outbox/` (one day), or not keeping
+  it at all.
+- **Simultaneous requests clobber each other.** All requests share
+  `inbox/`, `outbox/` and `image/`, and every compile ends with
+  `rm -f inbox/*.tex image/*`. A temporary folder per request would fix
+  this and make cleanup safe.
+- **Image URLs get mangled** when one image's name appears inside another
+  URL. URLs are swapped for file names by plain text substitution, which
+  shows in the logs as `…/image-1.jpgd7b724d-image-1.jpg…`.
+- **Very chatty log:** `logStdoutDev` logs every request with its
+  parameters (172,000 lines in two months). `logStdout`, or no request
+  log, would do.
+- **Port 3000 listens on all addresses.** The firewall blocks it, but
+  binding to 127.0.0.1 wouldn't depend on that.
+- **Small cleanups:** the `staticPolicy` middleware is added twice; the
+  deprecated `param` should become `captureParam`; the `V3` checkout in
+  `/root/pdfServer` is unused old code.
+
 ## Not reviewed
 
 The droplet's firewall also opens 3000, 3001, 8080 and 8179 for the other

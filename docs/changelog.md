@@ -1,5 +1,81 @@
 # Changelog
 
+## 2026-11-01 — pdfServer security fixes, and a log review of rose
+
+pdfServer (pdfserv.app) compiles LaTeX and renders TikZ for anyone on
+the internet, and it has real users besides James: about a dozen
+countries in rose's logs, mostly `/tikz2png`. It ran as root.
+
+### Log review on rose: no sign of a break-in
+
+Logs available: auth.log from Oct 11, pdfServer's journal from Sep 4,
+and nginx for two weeks.
+
+- **Logins:**
+  - all 151 SSH logins used this Mac's key (`carlson@jxxM3.local`);
+    the other eight keys, `zarak@hey.com` included, were never used;
+  - 441,389 failed password guesses, which can't succeed now that SSH is
+    key-only.
+- **Scanner traffic:** probes with `file:///root/.ssh/id_rsa`,
+  cloud-metadata URLs and so on went to paths pdfServer doesn't have
+  (`/fetch`, `/proxy`, `/__vite_rsc_findSourceMapURL`, ...). All got
+  404, and nothing was fetched.
+- **pdfServer's own records:**
+  - the 162 saved LaTeX inputs contain nothing hostile; the only "hits"
+    were pdfServer's own `\graphicspath`;
+  - images were downloaded only from `imagedelivery.net`;
+  - document names were ordinary.
+- **The system:**
+  - no new accounts (`jxx` unused since 2020);
+  - nothing in temp folders, no unusual processes, no suspicious shell
+    history;
+  - the October 25 changes (nmap snap, BBR tuning, scripta's nginx site)
+    look like a deliberate work session; James to confirm.
+- **Can't be verified:** `/tikz2png` input isn't kept anywhere, and older
+  logs are gone.
+
+### Flaws found and fixed
+
+pdfServer2 commits `7cf920e` and `901f3ac`; the full write-up is in the
+`7cf920e` commit message.
+
+1. **Shell injection, run as root.** The document id, image file names,
+   package names and image URLs went into `system` commands. Even an
+   `\includegraphics{http://..."$(cmd)"}` inside the LaTeX ran `cmd`.
+   - New `Safe.hs`: names are reduced to `[A-Za-z0-9._-]`, and every
+     request body is cleaned on arrival.
+   - Downloads use `curl` with an argument list, no shell.
+2. **Path traversal.** An id like `../../etc/cron.d/x` wrote anywhere.
+   Names are cleaned now, and `GET /pdf/:id` and `/tar/:id` refuse
+   unsafe names.
+3. **LaTeX reading any file**, e.g. `\input{/root/scripta-app-v4/.env}`,
+   which holds the Stripe keys.
+   - The server sets `openin_any=p`, `openout_any=p`, `shell_escape=f`
+     and `TEXMFOUTPUT=<its folder>`.
+   - Every TeX run has `-no-shell-escape`.
+4. **Fetching any URL** (SSRF), including `file://` and the metadata
+   service. Only public `http(s)` addresses are fetched now: the host is
+   checked, curl is pinned to the checked address, and there are no
+   redirects, plus time and size limits.
+5. **Running as root.** pdfServer now runs as the system user
+   `pdfserver`, with `ProtectSystem=strict`, `ProtectHome=read-only`,
+   `NoNewPrivileges`, `PrivateTmp`, no capabilities, and write access
+   only to its working folders. The old unit is in
+   `/root/migration-backups/pdfServer.service.before-hardening`.
+6. **No rate limit.** nginx now allows pdfserv.app 30 requests a minute
+   per client (burst 30, then 429). Checked: 60 parallel requests got 55
+   429s.
+
+### Checks
+
+- `deploy/security-test.py` in pdfServer2 (26 checks) passes on the live
+  server.
+- 25 real saved documents compiled with the same results before and
+  after.
+
+Also on rose2: `/root/.stack/config.yaml` now has `system-ghc: true`, so
+plain `stack build` (pdfServer's `deploy.sh`) uses ghcup's GHC.
+
 ## 2026-11-01 — Everything moved from rose to rose2 (Ubuntu 24.04)
 
 The plan, with progress notes:
