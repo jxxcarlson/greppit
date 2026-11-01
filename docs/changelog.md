@@ -1,5 +1,83 @@
 # Changelog
 
+## 2026-11-01 — Everything moved from rose to rose2 (Ubuntu 24.04)
+
+The plan, with progress notes:
+`docs/superpowers/specs/2026-11-01-server-migration-design.md`.
+
+### The new droplet
+
+**rose2** (`147.182.143.224`) is a DigitalOcean NYC1 droplet: Ubuntu
+24.04.5, 4 vCPU, 8 GB, 160 GB, Basic plan, with weekly DigitalOcean
+backups and the metrics agent.
+
+**Set up with:**
+- key-only root SSH (`/etc/ssh/sshd_config.d/00-hardening.conf`), with
+  only this Mac's key authorized;
+- ufw allowing 22, 80 and 443;
+- Postgres 16, nginx 1.24, certbot 2.9;
+- 4 GB of swap;
+- TeX Live 2023, poppler-utils and ghostscript;
+- Node 18;
+- ghcup with GHC 9.4.7, 9.6.6 and 9.6.7, cabal 3.16 and Stack 3.11;
+- Elm 0.19.2;
+- `/root` set to 711, so nginx can reach the frontends.
+
+OpenSSH 9.6 means no more post-quantum warning. `/etc/letsencrypt` was
+copied from rose, and `certbot renew --dry-run` passes for all five
+domains.
+
+### How each app moved
+
+Each app was built and tested on rose2 first. At switch-over it was
+stopped (and disabled) on rose, its database was dumped and restored,
+and its DNS record was changed. Row counts matched for every table in
+every database.
+
+| App | Site | Notes |
+|---|---|---|
+| greppit | greppit.app | Built with `stack --system-ghc`. 97 snippets. www.greppit.app got its first DNS record (a CNAME). |
+| cloudelog | cloudelog.app | Frontend copied as built on rose. 67 entries, 8 users. |
+| pdfServer | pdfserv.app | The live program was the `pdfServer2` checkout (`master`, `lts-22.44`, GHC 9.6.7), not the `V3` code beside it. Same version, `c2f9a74`, on both servers. **Its DNS is at Squarespace Domains** (formerly Google Domains), not Cloudflare. |
+| scripta | x-scripta.app | Built with GHC 9.4.7 + cabal, pinned to rose's exact versions in `cabal.project.production` (scripta-app-v4 `696f87d`). 19 tables matched. The domain is DNS-only. |
+| kv-store | dataserv.app | Copied, NOT started, as on rose. Now proxied, with SSL/TLS mode Full (strict); "Flexible" caused a redirect loop. The domain expires 2026-12-10. |
+
+Left behind on purpose: the `forscotty` database, shoobox.io, and
+leftover folders (analyticsServer, docserver, file_server, xnginx,
+dataServer).
+
+### Found and fixed along the way
+
+- **Postgres trusted every local connection on rose.** Its `pg_hba.conf`
+  had `host all all 127.0.0.1/32 trust`: any local connection got in
+  with no password, as any user, including the superuser `root` that
+  scripta connected as.
+  - On rose2, scripta connects as a non-superuser `root` role that owns
+    `scripta_v4`, using peer authentication over the local socket. Its
+    `.env` says `DATABASE_URL=postgresql:///scripta_v4?host=/var/run/postgresql`.
+  - The original `.env` is in `/root/migration-backups/`.
+- **rose2 had no GitHub access.** rose pulled with a key on James's
+  GitHub account, so deploys on rose2 would have failed. rose2 now has
+  its own key, `root@rose2`, also on that account. GitHub's host key
+  was checked against its published fingerprint.
+- **Deploy scripts pointed at rose.** They now point at rose2 in
+  scripta-app-v4 (`7610d7d`; `prod-update.sh` now requires hostname
+  `rose2`), cloudelog (`538a887`), pdfServer2 (`6e8b757`) and greppit
+  (`4ec46ef`).
+  - On rose2, `/usr/local/bin/elm-0.19.2` links to Elm, for scripta's
+    `prod-restart.sh --frontend`.
+- **`deploy/README.md`** now describes rose2 and the 24.04 setup.
+
+### Still to do
+
+- ~~Stop and disable pdfServer on rose.~~ Done at 19:51 UTC: its last
+  request had been at 19:11. Only nginx still runs on rose, and no app is
+  left there.
+- After a few days of everything running well:
+  - delete rose and its snapshot `rose-1793510599494`;
+  - remove rose's key (`root@rose`, `SHA256:m9mhDSUd…`) from GitHub.
+- cloudelog's frontend commit `d6ea514` is still undeployed, by choice.
+
 ## 2026-11-01 — Droplet security updates (Ubuntu Pro)
 
 Item 4 in `docs/security-remaining-tasks.md` (finding 8). Done on the

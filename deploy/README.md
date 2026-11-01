@@ -7,6 +7,28 @@ Origin Certificate; Cloudflare proxies in front ("Full (strict)" mode).
 This runbook assumes a single DigitalOcean droplet running as `root`.
 Adjust `User=` and paths if you run greppit as a non-root user.
 
+## Where greppit runs now
+
+- **Droplet:** **rose2**, `root@147.182.143.224`. It's a DigitalOcean
+  NYC1 droplet: Ubuntu 24.04, 4 vCPU, 8 GB of memory, 160 GB of disk,
+  with weekly DigitalOcean backups. It has run greppit since 2026-11-01,
+  replacing **rose** (161.35.125.40, Ubuntu 18.04).
+- **Also on it:** cloudelog, scripta (x-scripta.app), pdfServer and the
+  stopped kv-store. Each is in its own folder under `/root`.
+- **DNS:** greppit.app and www (a CNAME to greppit.app) are proxied by
+  Cloudflare, with SSL/TLS mode Full (strict).
+- **What's installed:**
+  - Postgres 16, nginx 1.24, certbot (apt);
+  - GHC 9.6.6 and 9.6.7, cabal and Stack, via ghcup in `/root/.ghcup`;
+    `stack` is symlinked into `/usr/local/bin`;
+  - Elm 0.19.2 (npm), and 4 GB of swap.
+- **How it was built:** `docs/superpowers/specs/2026-11-01-server-migration-design.md`.
+- **Already applied on rose2:** the scripts in `deploy/nginx/` (rate
+  limit, no-cache, security headers) and key-only SSH. `harden-ssh.sh`
+  was for rose; rose2 uses `/etc/ssh/sshd_config.d/00-hardening.conf`.
+- **GitHub access:** rose2 pulls from GitHub with its own key,
+  `root@rose2`, which is on James's GitHub account.
+
 ---
 
 ## Phase 1 — Prerequisites (once per droplet)
@@ -16,8 +38,16 @@ apt update
 apt install -y build-essential libpq-dev postgresql postgresql-contrib \
   nginx jq curl python3 git
 
-# Stack (GHC)
-curl -sSL https://get.haskellstack.org/ | sh
+# GHC + Stack via ghcup (as on rose2). greppit's resolver lts-22.43 uses
+# GHC 9.6.6; build with `stack --system-ghc` so Stack uses this one.
+curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | \
+  BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_GHC_VERSION=9.6.6 \
+  BOOTSTRAP_HASKELL_INSTALL_STACK=1 sh
+ln -sf /root/.ghcup/bin/stack /usr/local/bin/stack
+
+# nginx (user www-data) serves the frontend from /root/greppit/frontend,
+# so it must be able to pass through /root (but not list it):
+chmod 711 /root
 
 # Elm 0.19.2 + elm-test
 apt install -y npm
@@ -217,8 +247,11 @@ Open `https://greppit.app/` in a browser and sign up.
   --optimize --output=elm.js` in `frontend/`. No service restart needed —
   nginx serves the new file on the next request.
 - **Backend update:** pull on the server, then
-  `cd backend && stack install --local-bin-path /usr/local/bin`,
-  then `systemctl restart greppit-backend`.
+  `cd backend && stack --system-ghc install --local-bin-path /usr/local/bin`,
+  then `systemctl restart greppit-backend`. Afterwards, check that
+  `systemctl is-active greppit-backend` says `active`. `/api/health`
+  alone can be answered by a stray process: on rose a hand-started
+  backend from June held the port until 2026-11-01.
   Note: `stack build` alone is NOT enough — it only updates the binary
   inside `.stack-work/`. The systemd unit runs `/usr/local/bin/greppit-backend`,
   so you must `stack install` to refresh that path. If the service fails
@@ -240,7 +273,6 @@ Open `https://greppit.app/` in a browser and sign up.
 - Run greppit as a dedicated non-root user (`adduser greppit`, then
   `User=greppit` in the systemd unit and `chown -R greppit:greppit` on the
   checkout).
-- Rate-limit `/api/auth/*` in nginx to slow brute-force login attempts.
 - Add a real logging / metrics pipeline (journald + Grafana Loki is
   lightweight; Honeycomb or equivalent if you want tracing later).
 - `fail2ban` for ssh + nginx.
