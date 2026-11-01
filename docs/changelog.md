@@ -1,5 +1,72 @@
 # Changelog
 
+## 2026-10-31 — Security headers and a required JWT secret
+
+Items 2 and 3 in `docs/security-remaining-tasks.md` (findings 2 and 5 in
+`docs/security-fixes-to-do.md`). Branches `fix/jwt-secret-check`
+(`c9c55f5`) and `feat/security-headers`, both merged into `main`.
+
+### JWT secret check
+
+- **Change:** the backend refuses to start if `JWT_SECRET` is missing,
+  shorter than 32 bytes, or the old published default. It exits with a
+  message saying how to generate one (`openssl rand -base64 48`).
+  Before, a missing secret silently fell back to that default, which
+  anyone could have used to sign valid tokens.
+- **Code:** `Config.validateJwtSecret` in `backend/src/Config.hs`, used
+  by `loadConfig`.
+- **Tests:** `backend/test/ConfigSpec.hs`, 5 cases; all 46 backend tests
+  pass. The real binary refuses a missing or short secret.
+- **Production:** the droplet's 64-character secret passes, so logins
+  aren't affected.
+- **Local development:** a secret is now required locally too.
+  - A generated one was added to the local `.env`.
+  - `README.md`, `backend/README.md` and `.env.example` now say it's
+    required.
+  - Local logins signed with the old default stop working, so sign in
+    again once.
+
+### Security headers
+
+- **Page policy:** `frontend/index.html` has a Content-Security-Policy
+  `<meta>` tag.
+  - **Scripts:** only from greppit, esm.sh and jsdelivr, plus the
+    import map, allowed by its SHA-256 hash. Inline scripts and
+    `javascript:` links are blocked, even if a renderer lets one
+    through.
+  - **Styles:** inline styles stay allowed (Elm, KaTeX and CodeMirror
+    use them).
+  - **Frames and media:** `https:` is allowed, for Scripta's `| iframe`.
+  - **Connections:** greppit itself, plus `localhost:8085` for
+    development.
+- **Start-up script moved:** from `index.html` to `frontend/app.js`, so
+  editing it can't break the policy.
+- **Import map catch:** after any change to the import map, run
+  `python3 scripts/csp-hash.py`. It says whether the hash in the policy
+  still matches and prints the new one. A stale hash stops CodeMirror
+  from loading.
+- **Server headers:** `deploy/nginx/add-security-headers.sh` installs
+  `/etc/nginx/snippets/greppit-security-headers.conf` (same as
+  `deploy/nginx/greppit-security-headers.conf`):
+  - `Strict-Transport-Security`: browsers always use HTTPS;
+  - `X-Content-Type-Options: nosniff`: no guessing at file types;
+  - `X-Frame-Options: DENY` and `frame-ancestors 'none'`: no framing by
+    other sites (clickjacking);
+  - `Referrer-Policy: strict-origin-when-cross-origin`.
+
+  nginx drops inherited `add_header` lines in a location that has its
+  own, so the snippet is included in the server block and in each
+  no-cache location. `/app.js` also gets `no-cache`. The same changes
+  are in `deploy/nginx/greppit.app.conf`.
+- **Checked locally in Chrome:**
+  - Elm, KaTeX math, the CodeMirror editor and backend calls work, with
+    no policy errors.
+  - An injected `javascript:` link and an injected inline script were
+    both blocked.
+  - The nginx edit was dry-run on a copy of the installed config.
+- **Note:** the local backend stopped during testing, possibly because
+  of a cleanup command. It was restarted with the new local secret.
+
 ## 2026-10-31 — Rate limit on login and signup
 
 Finding 4 in `docs/security-fixes-to-do.md`.
