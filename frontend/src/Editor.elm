@@ -2,7 +2,7 @@ module Editor exposing (view)
 
 import CodeMirror
 import Html exposing (Html, button, div, input, label, option, select, text)
-import Html.Attributes exposing (class, disabled, placeholder, selected, type_, value)
+import Html.Attributes exposing (attribute, class, disabled, placeholder, selected, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Render
 import Types exposing (EditorState, Markup(..), Msg(..), stringToMarkup)
@@ -103,6 +103,7 @@ view st =
                     , onInput = EditorBodyChanged
                     }
                 ]
+            , div [ class "resizer", attribute "data-resize" "editor", title "Drag to resize; double-click to reset" ] []
             , div [ class "editor-preview" ]
                 [ Render.renderBody st.markup st.previewSource ]
             ]

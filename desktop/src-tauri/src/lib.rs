@@ -6,7 +6,7 @@
 //! browser, so the window always stays greppit.
 
 use tauri::menu::{Menu, MenuItemBuilder, SubmenuBuilder};
-use tauri::webview::NewWindowResponse;
+use tauri::webview::{DownloadEvent, NewWindowResponse};
 use tauri::{Manager, Url, WebviewUrl, WebviewWindowBuilder};
 use tauri_plugin_opener::OpenerExt;
 
@@ -97,6 +97,7 @@ pub fn run() {
         })
         .setup(|app| {
             let opener = app.handle().clone();
+            let revealer = app.handle().clone();
             WebviewWindowBuilder::new(app, "main", WebviewUrl::External(HOME.parse()?))
                 .title("Greppit")
                 .inner_size(1200.0, 800.0)
@@ -107,6 +108,16 @@ pub fn run() {
                         let _ = opener.opener().open_url(url.as_str(), None::<&str>);
                     }
                     NewWindowResponse::Deny
+                })
+                // Without a handler the webview cancels downloads, so
+                // Export did nothing. They go to ~/Downloads (as
+                // "name (1).ext" rather than overwriting), and the saved
+                // file is shown in Finder, since there's no download bar.
+                .on_download(move |_webview, event| {
+                    if let DownloadEvent::Finished { path: Some(path), success: true, .. } = event {
+                        let _ = revealer.opener().reveal_item_in_dir(path);
+                    }
+                    true
                 })
                 .build()?;
             Ok(())

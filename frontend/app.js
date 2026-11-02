@@ -127,3 +127,70 @@ app.ports.scrollToElement.subscribe(function (id) {
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 });
+
+// Resizable columns. Elm draws a .resizer handle between two columns
+// (Main.resizer, Editor.view). Dragging it sets a CSS variable on <html>
+// that the column's width reads, so Elm's re-renders never undo it; the
+// width is remembered in localStorage. Double-click resets it. `side`
+// says which neighbour of the handle the variable sizes.
+var RESIZERS = {
+    left:   { prop: '--col-left-w',        side: 'prev', min: 180 },
+    toc:    { prop: '--col-toc-w',         side: 'next', min: 120 },
+    editor: { prop: '--editor-source-pct', side: 'prev', min: 200, percent: true }
+};
+var MIN_OTHER = 200;  // the column on the far side of the handle keeps this much
+
+function widthKey(name) { return 'greppit-width-' + name; }
+
+Object.keys(RESIZERS).forEach(function (name) {
+    try {
+        var w = localStorage.getItem(widthKey(name));
+        if (w) document.documentElement.style.setProperty(RESIZERS[name].prop, w);
+    } catch (e) {}
+});
+
+document.addEventListener('pointerdown', function (e) {
+    var handle = e.target.closest && e.target.closest('.resizer');
+    var r = handle && RESIZERS[handle.dataset.resize];
+    if (!r || e.button !== 0) return;
+    var col = r.side === 'prev' ? handle.previousElementSibling : handle.nextElementSibling;
+    var other = r.side === 'prev' ? handle.nextElementSibling : handle.previousElementSibling;
+    if (!col || !other) return;
+    e.preventDefault();
+
+    var parentWidth = handle.parentElement.getBoundingClientRect().width;
+    var startX = e.clientX;
+    var startWidth = col.getBoundingClientRect().width;
+    var max = startWidth + other.getBoundingClientRect().width - MIN_OTHER;
+    var value = null;
+
+    function move(ev) {
+        var dx = ev.clientX - startX;
+        var w = startWidth + (r.side === 'prev' ? dx : -dx);
+        w = Math.max(r.min, Math.min(max, w));
+        value = r.percent ? (100 * w / parentWidth).toFixed(2) + '%' : Math.round(w) + 'px';
+        document.documentElement.style.setProperty(r.prop, value);
+    }
+    function up() {
+        handle.removeEventListener('pointermove', move);
+        handle.removeEventListener('pointerup', up);
+        handle.removeEventListener('pointercancel', up);
+        handle.classList.remove('active');
+        document.body.classList.remove('resizing');
+        if (value) try { localStorage.setItem(widthKey(handle.dataset.resize), value); } catch (e) {}
+    }
+    handle.setPointerCapture(e.pointerId);
+    handle.classList.add('active');
+    document.body.classList.add('resizing');
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', up);
+});
+
+document.addEventListener('dblclick', function (e) {
+    var handle = e.target.closest && e.target.closest('.resizer');
+    var r = handle && RESIZERS[handle.dataset.resize];
+    if (!r) return;
+    document.documentElement.style.removeProperty(r.prop);
+    try { localStorage.removeItem(widthKey(handle.dataset.resize)); } catch (e) {}
+});

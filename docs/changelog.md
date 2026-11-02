@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-11-02 — Resizable columns; Export in the desktop app
+
+- **Resizable columns** (web and desktop): a drag handle sits between
+  the snippet list and the main pane, between the main pane and the
+  table of contents, and between the editor's source and preview.
+  - Elm draws the handles (`Main.resizer`, `Editor.view`). `app.js` does
+    the dragging: it sets `--col-left-w`, `--col-toc-w` or
+    `--editor-source-pct` on `<html>`, and the columns' CSS widths read
+    those, so Elm's re-renders never undo a drag.
+  - Widths are remembered in localStorage (`greppit-width-*`), per
+    browser; the desktop app keeps its own. Double-clicking a handle
+    resets that column.
+  - The column on the far side of a handle keeps at least 200px. While
+    dragging, iframes and the editor ignore the mouse, so the drag
+    isn't lost over them.
+  - Checked locally in Chrome: all three handles drag, the widths
+    survive a reload, double-click resets.
+- **Desktop app: Export works.** The webview cancels downloads unless the
+  app has a download handler, so Export did nothing. It now saves to
+  ~/Downloads and shows the file in Finder (`desktop/src-tauri/src/lib.rs`).
+  Needs the rebuilt `Greppit.app` in /Applications.
+
 ## 2026-11-01 — Greppit for the desktop (Tauri)
 
 A Mac app, in `desktop/`, that gives greppit its own window, Dock icon

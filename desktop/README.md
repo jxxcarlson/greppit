@@ -8,6 +8,9 @@ picks up every deploy with no rebuild.
   from your browser's.
 - **Links** to other sites open in your default browser; iframes inside
   documents (Desmos and the like) still load in place.
+- **Downloads** (Export) go to ~/Downloads, as "name (1).ext" rather
+  than overwriting, and the saved file is shown in Finder. Without the
+  `on_download` handler the webview silently cancels them.
 - **Menu:** View → Reload (Cmd-R), View → Go to greppit.app (Cmd-Shift-H).
 - **Window** size and position are remembered between launches.
 - The page gets no access to Tauri's APIs (`src-tauri/capabilities/default.json`

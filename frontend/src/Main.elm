@@ -7,7 +7,7 @@ import Editor
 import Export
 import File.Download
 import Html exposing (Html, button, div, text)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (attribute, class, title)
 import Html.Events exposing (onClick)
 import Http
 import Process
@@ -791,9 +791,17 @@ view model =
                             , selectedId = s.selectedId
                             }
                         ]
+                        :: resizer "left"
                         :: viewRight s
                     )
                 ]
+
+
+-- | A drag handle between two columns. app.js does the dragging: it sets
+-- a CSS variable that the column's width reads, so re-renders keep it.
+resizer : String -> Html Msg
+resizer name =
+    div [ class "resizer", attribute "data-resize" name, title "Drag to resize; double-click to reset" ] []
 
 
 viewRight : SignedInData -> List (Html Msg)
@@ -847,6 +855,7 @@ viewRight s =
 
             else
                 [ displayColumn
+                , resizer "toc"
                 , div [ class "col-toc" ] rendered.toc
                 ]
 
