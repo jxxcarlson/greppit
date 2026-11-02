@@ -1,5 +1,29 @@
 # Changelog
 
+## 2026-11-01 — Greppit for the desktop (Tauri)
+
+A Mac app, in `desktop/`, that gives greppit its own window, Dock icon
+and Cmd-Tab entry, so it isn't lost among browser tabs.
+
+- **What it is:** a Tauri 2 window that loads the live https://greppit.app.
+  It isn't a second frontend, so it looks exactly like the site and
+  picks up every deploy with no rebuild.
+- **Login:** kept in the app's own web storage, apart from the browser's.
+- **Links** to other sites open in the default browser. A small script in
+  the main frame turns off-site link clicks into `window.open`, which the
+  app hands to the browser. Iframes in documents (Desmos and the like)
+  still load in place.
+- **Menu:** Reload (Cmd-R) and Go to greppit.app (Cmd-Shift-H). The window
+  remembers its size and position.
+- **Security:** the page gets no access to Tauri's APIs (the capability
+  file grants nothing).
+- **Icon:** the site's yellow scissors on a dark rounded square.
+- **Install:** `cd desktop && npm install && npm run build`, then
+  `Greppit.app` goes in /Applications (James installed it there). It
+  isn't signed with an Apple developer certificate. It needs Rust 1.90+
+  (this Mac was updated from 1.88 to 1.99).
+- Checked: the app starts and shows greppit.app's sign-in page.
+
 ## 2026-11-01 — Nightly database dumps copied to Backblaze B2
 
 Until now the nightly dumps were kept only on the server they back up,
