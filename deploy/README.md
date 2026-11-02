@@ -259,6 +259,22 @@ Open `https://greppit.app/` in a browser and sign up.
   `ss -tlnp | grep <port>` and `kill` it before trying again.
 - **Backups:** `scripts/db-dump-do.sh` dumps to `~/greppit/backups/`.
   Cron suggestion: `0 3 * * * /root/greppit/scripts/db-dump-do.sh`.
+  - **Off-server copy (rose2):** at 03:40 UTC, `/usr/local/sbin/b2-backup.sh`
+    (`deploy/b2/b2-backup.sh`) uploads the newest dump of greppit, scripta
+    and cloudelog to Backblaze B2: bucket `jxxcarlson-rose2-backups`,
+    under `rose2/<app>/`. The log is `/var/log/b2-backup.log`.
+  - **The key** is the write-only application key `rose2-backup`, limited
+    to that bucket and stored in `/root/.config/rclone/rclone.conf`
+    (600). It can't list, download or delete, so a compromised rose2
+    can't destroy the backups. The bucket's lifecycle rule hides dumps
+    after 30 days and deletes them a day later.
+  - **To replace the key,** create a new one in Backblaze, then run
+    `ssh -t root@147.182.143.224 /usr/local/sbin/b2-set-key.sh`
+    (`deploy/b2/b2-set-key.sh`). It asks for the key without echoing it,
+    and tests an upload.
+  - **To restore,** download the dump in the Backblaze web console
+    (Browse Files), then `pg_restore --no-owner --no-acl -d <db> <file>`.
+    For scripta, create the `pgcrypto` and `pg_trgm` extensions first.
   Pull dumps to your Mac with `scripts/db-fetch-dump.sh` after setting
   `GREPPIT_PROD_HOST` and `GREPPIT_PROD_BACKUP_DIR` in your *local* `.env`.
 

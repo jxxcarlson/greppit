@@ -28,12 +28,14 @@ notes in `docs/changelog.md`.
    images, one image's name gets substituted inside the other URLs (it
    shows in the logs as `…/image-1.jpgd7b724d-image-1.jpg…`), so those
    downloads fail. Users can actually hit this.
-3. **Keep a copy of the nightly database dumps somewhere other than
-   rose2.** Right now they live only on rose2, plus DigitalOcean's weekly
+3. ~~**Keep a copy of the nightly database dumps somewhere other than
+   rose2.**~~ **Done 2026-11-01:** they go to Backblaze B2 every night with a
+   write-only key (see `docs/changelog.md`). Right now they live only on rose2, plus DigitalOcean's weekly
    backup of the whole server. A nightly copy to the Mac or to cloud
    storage would close that gap.
 
-Next: (3).
+All three are done. What's left is the dated items and the smaller
+ones.
 
 ## Smaller items, any time
 

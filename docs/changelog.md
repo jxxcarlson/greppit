@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-11-01 — Nightly database dumps copied to Backblaze B2
+
+Until now the nightly dumps were kept only on the server they back up,
+plus DigitalOcean's weekly snapshot of the whole droplet.
+
+- **Where:** Backblaze B2 (US East), bucket `jxxcarlson-rose2-backups`
+  (private, default encryption on), under `rose2/<app>/`.
+  - A lifecycle rule hides each file after 30 days and deletes it a day
+    later.
+  - That keeps about 30 × 120 MB, within B2's free 10 GB.
+- **Key:** the application key `rose2-backup`: **write only**, limited to
+  that bucket. Never the master key.
+  - Stored on rose2 in `/root/.config/rclone/rclone.conf` (600), as the
+    rclone remote `b2backup`. James entered it with
+    `deploy/b2/b2-set-key.sh`, which doesn't echo it.
+  - Checked: the key **can't list or delete**, so a compromised rose2
+    can't destroy the backups.
+- **Nightly job:** `deploy/b2/b2-backup.sh`, installed as
+  `/usr/local/sbin/b2-backup.sh`.
+  - root's crontab runs it at 03:40 UTC, after the 03:00 dumps.
+  - It uploads each app's newest dump from the last 24 hours, and logs to
+    `/var/log/b2-backup.log`.
+  - It exits non-zero if a dump is missing or an upload fails.
+- **First run, done by hand:** the three dump scripts ran cleanly under
+  the new unprivileged setup (greppit 80 KB, cloudelog 19 KB, scripta
+  121 MB), and all three uploads succeeded.
+- **Restore test:** the uploaded scripta dump, restored into a temporary
+  database, has the same 329 documents, 415 nodes and 20 users as live.
+  The temporary database was then dropped.
+- **Docs:** `deploy/README.md` (Backups) now covers the B2 copy, how to
+  replace the key, and how to restore.
+- **Also on rose2:**
+  - DigitalOcean's metrics agent (`do-agent`) is installed, so memory and
+    disk now show in the droplet's Insights tab.
+  - A full admin guide for the droplet is in
+    `~/dev/DigitalOcean.rose/README.md`, on James's Mac.
+
 ## 2026-11-01 — pdfServer: image URLs no longer rewrite the document
 
 pdfServer2 `b34570b`, deployed; `/hello` reports `b34570b`.
