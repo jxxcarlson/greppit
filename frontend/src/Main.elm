@@ -782,7 +782,7 @@ view model =
 
         SignedIn s ->
             div []
-                [ header (Just { email = s.user.email, count = List.length s.results })
+                [ header (Just { email = s.user.email, count = List.length s.results, editable = displayedSnippet s })
                 , div [ class "app" ]
                     (div [ class "col-left" ]
                         [ Search.view
@@ -822,26 +822,22 @@ viewRight s =
                 displayColumn =
                     div [ class "col-right" ]
                         [ div [ class "display-snippet" ]
-                            [ div [ class "display-header" ]
-                                [ div [ class "display-title" ]
-                                    [ text
-                                        (if Render.hasSourceTitle snippet.markup snippet.body then
-                                            -- The body's title block shows the title.
-                                            ""
+                            [ if Render.hasSourceTitle snippet.markup snippet.body then
+                                -- The body's title block shows the title.
+                                text ""
 
-                                         else if String.isEmpty snippet.title then
-                                            "(untitled)"
+                              else
+                                div [ class "display-header" ]
+                                    [ div [ class "display-title" ]
+                                        [ text
+                                            (if String.isEmpty snippet.title then
+                                                "(untitled)"
 
-                                         else
-                                            snippet.title
-                                        )
+                                             else
+                                                snippet.title
+                                            )
+                                        ]
                                     ]
-                                , button
-                                    [ class "btn btn-secondary"
-                                    , onClick (EditPressed snippet)
-                                    ]
-                                    [ text "Edit" ]
-                                ]
                             , if String.isEmpty snippet.tags then
                                 text ""
                               else
@@ -865,7 +861,18 @@ viewRight s =
             ]
 
 
-header : Maybe { email : String, count : Int } -> Html Msg
+-- | The snippet shown on the right, if any: the header's Edit button edits it.
+displayedSnippet : SignedInData -> Maybe Snippet
+displayedSnippet s =
+    case s.rightMode of
+        DisplayMode snippet ->
+            snippet
+
+        EditorMode _ ->
+            Nothing
+
+
+header : Maybe { email : String, count : Int, editable : Maybe Snippet } -> Html Msg
 header mInfo =
     div [ class "header" ]
         [ div [ class "header-left" ]
@@ -883,12 +890,21 @@ header mInfo =
         , div [ class "header-right" ]
             (case mInfo of
                 Just info ->
-                    [ button [ class "btn btn-primary", onClick NewSnippetPressed ]
-                        [ text "New snippet" ]
-                    , div [ class "header-email" ] [ text info.email ]
-                    , button [ class "btn btn-secondary", onClick SignedOutPressed ]
-                        [ text "Sign out" ]
-                    ]
+                    (case info.editable of
+                        Just snippet ->
+                            [ button [ class "btn btn-secondary", onClick (EditPressed snippet) ]
+                                [ text "Edit" ]
+                            ]
+
+                        Nothing ->
+                            []
+                    )
+                        ++ [ button [ class "btn btn-primary", onClick NewSnippetPressed ]
+                                [ text "New snippet" ]
+                           , div [ class "header-email" ] [ text info.email ]
+                           , button [ class "btn btn-secondary", onClick SignedOutPressed ]
+                                [ text "Sign out" ]
+                           ]
 
                 Nothing ->
                     []

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-02 — Edit button moved to the header
+
+- **Edit** now sits in the header bar, left of **New snippet** (web and
+  desktop). It shows while a snippet is displayed and hides in the
+  editor or when nothing is selected (`Main.header`,
+  `Main.displayedSnippet`).
+- The title row above a displayed snippet now holds only the title, and
+  is left out when the body's own title block shows it.
+- Checked locally in Chrome: the button opens the editor and is hidden
+  there.
+
 ## 2026-11-02 — Resizable columns; Export in the desktop app
 
 - **Resizable columns** (web and desktop): a drag handle sits between
